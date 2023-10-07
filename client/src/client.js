@@ -13,6 +13,12 @@ const c = new Crawler({
         }else{
             let $ = res.$; //get cheerio data, see cheerio docs for info
 
+            //iterate through all the outgoing links
+            //do a get request to see if link already exists in database
+            //if not, then add it to the database and queue via post request with all the info
+            //regardless, the number of incoming links of this page should be incremented
+            //in the drain function, request the next link in the queue
+
             console.log("Keywords: " + $("meta[name=Keywords]").attr("content"));
             console.log("\n\n");
             console.log("Description: " + $("meta[name=Description]").attr("content"));
