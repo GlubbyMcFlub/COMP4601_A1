@@ -3,29 +3,30 @@ const { Schema } = mongoose;
 
 const linkSchema = new Schema(
 	{
-		title: {	//N-0, technically not required
-			type: String,
-			required: true,
-		},	
-		link: {	//view-source:https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html
+		title: {
 			type: String,
 			required: true,
 		},
-		numIncomingLinks: {	//increment
-			type: Number,
+		link: {
+			type: String,
 			required: true,
+			unique: true,
 		},
-		paragraph: {	//all the fruits, technically not required
+		paragraph: {
 			type: String,
 			required: true,
 		},
-		incomingLinks: [{ type: Schema.Types.ObjectId, ref: "linkSchema" }],	//corresponding mongoose id
-		outgoingLinks: [{ type: Schema.Types.ObjectId, ref: "linkSchema" }],	//corresponding mongoose id, technically not required
+		incomingLinks: [{ type: Schema.Types.ObjectId, ref: "LinkModel" }],
+		outgoingLinks: [{ type: Schema.Types.ObjectId, ref: "LinkModel" }],
 	},
 	{ timestamps: true }
 );
 
-reviewSchema.index({ numIncomingLinks: 0 });
+linkSchema.virtual("numIncomingLinks").get(function () {
+	return this.incomingLinks.length;
+});
+
+linkSchema.index({ numIncomingLinks: 1, link: 1 }); // Index by number of incoming links and link itself
 
 const LinkModel = mongoose.model("LinkModel", linkSchema);
 export default LinkModel;
