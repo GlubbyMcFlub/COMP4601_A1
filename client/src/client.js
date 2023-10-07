@@ -7,19 +7,17 @@ const startTime = new Date();
 
 const c = new Crawler({
 	maxConnections: 60,
-	retries: 3,
-	retryTimeout: 10000,
 	callback: async function (error, res, done) {
 		if (error) {
 			console.error(error);
 		} else {
 			const $ = res.$;
-			const baseUrl = new URL(res.options.uri); // Parse the base URL
-			const url = baseUrl.href; // Get the normalized base URL
+			const baseUrl = new URL(res.options.uri);
+			const url = baseUrl.href;
 			const outgoingLinks = $("a")
 				.map(function () {
-					const link = new URL($(this).attr("href"), baseUrl); // Create an absolute URL
-					return link.href; // Get the normalized absolute URL
+					const link = new URL($(this).attr("href"), baseUrl);
+					return link.href;
 				})
 				.get();
 			const paragraph = $("p").text();
@@ -28,10 +26,9 @@ const c = new Crawler({
 				title: url,
 				link: url,
 				paragraph: paragraph,
-				//outgoingLinks: outgoingLinks,
 			};
 
-			if (!links.some((link) => link === url)) {
+			if (!links.includes(url)) {
 				try {
 					const response = await fetch("http://localhost:5000/links/", {
 						method: "POST",
@@ -42,10 +39,14 @@ const c = new Crawler({
 					});
 
 					const data = await response.json();
-					links.push(url);
-					console.log("Link saved:", data.link);
+					if (response.status === 201) {
+						links.push(url);
+						console.log("Link saved:", data.link);
+					} else {
+						console.error("Failed to save link. Error: ", data.message);
+					}
 				} catch (err) {
-					console.error(err);
+					console.error("Failed to save link. Error: ", err.message);
 				}
 			}
 			// Queue the outgoing links for crawling

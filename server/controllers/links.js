@@ -40,12 +40,36 @@ export const getPopular = async (req, res) => {
 };
 
 export const createLink = async (req, res) => {
-	const link = req.body;
-	const newLink = new LinkModel(link);
+	const { title, link, paragraph, outgoingLinks } = req.body;
 
 	try {
-		await newLink.save();
-		console.log("New Link Created");
+		let newLink = await LinkModel.findOneAndUpdate(
+			{ link: link },
+			{
+				title: title,
+				link: link,
+				paragraph: paragraph,
+				outgoingLinks: outgoingLinks,
+			},
+			{
+				new: true, // Return the modified document rather than the original
+				upsert: true, // Create the document if it doesn't exist
+				runValidators: true, // Run validators to ensure the data conforms to the schema
+			}
+		);
+
+		if (!newLink) {
+			// If newLink is null, it means the document was created
+			newLink = new LinkModel({
+				title: title,
+				link: link,
+				paragraph: paragraph,
+				outgoingLinks: outgoingLinks,
+			});
+			await newLink.save();
+		}
+
+		console.log("New link saved: ", newLink.link);
 		res.status(201).json(newLink);
 	} catch (error) {
 		res.status(400).json({ message: error.message });
