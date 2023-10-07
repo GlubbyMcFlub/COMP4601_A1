@@ -43,33 +43,20 @@ export const createLink = async (req, res) => {
 	const { title, link, paragraph, outgoingLinks } = req.body;
 
 	try {
-		let newLink = await LinkModel.findOneAndUpdate(
-			{ link: link },
-			{
-				title: title,
-				link: link,
-				paragraph: paragraph,
-				outgoingLinks: outgoingLinks,
-			},
-			{
-				new: true, // Return the modified document rather than the original
-				upsert: true, // Create the document if it doesn't exist
-				runValidators: true, // Run validators to ensure the data conforms to the schema
-			}
-		);
+		const doesLinkExist = await LinkModel.findOne({ link: link });
 
-		if (!newLink) {
-			// If newLink is null, it means the document was created
-			newLink = new LinkModel({
-				title: title,
-				link: link,
-				paragraph: paragraph,
-				outgoingLinks: outgoingLinks,
-			});
-			await newLink.save();
-		}
+		if (doesLinkExist)
+			return res.status(400).json({ message: "Link already exists" });
 
-		console.log("New link saved: ", newLink.link);
+		const newLink = new LinkModel({
+			title: title,
+			link: link,
+			paragraph: paragraph,
+			outgoingLinks: outgoingLinks,
+		});
+
+		console.log(newLink);
+		await newLink.save();
 		res.status(201).json(newLink);
 	} catch (error) {
 		res.status(400).json({ message: error.message });
