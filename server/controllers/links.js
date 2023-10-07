@@ -4,10 +4,10 @@ import mongoose from "mongoose";
 import LinkModel from "../models/linkModel.js";
 
 
-// i don't know if we need to get page data by id or name so ive written both
+// i don't know if we need to get page data by id or link so ive written both
 export const getLinks = async (req, res) => {
   try {
-    const { name, id } = req.query;
+    const { link, id } = req.query;
 
     let links;
 
@@ -15,22 +15,21 @@ export const getLinks = async (req, res) => {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: "Invalid link ID" });
       }
-      const product = await LinkModel.findById(id).populate("outgoingLinks").populate("incomingLinks");
+      const link = await LinkModel.findById(id).populate("incomingLinks");
 
-      res.status(200).json(product);
+      res.status(200).json(link);
       return;
     }
-    else if(name){
-      const regexPattern = new RegExp(name, "s"); // Define a regex pattern for case-sensitive search
-      links = await LinkModel.find({
-      name: { $regex: regexPattern },
+    else if(link){
+      const regexPattern = new RegExp(link, "s"); // Define a regex pattern for case-sensitive search
+      link = await LinkModel.find({
+      link: { $regex: regexPattern },
       })
-      .populate("outgoingLinks")
       .populate("incomingLinks");
+      res.status(200).json(link);
     }
     else{
       links = await LinkModel.find()
-      .populate("outgoingLinks")
       .populate("incomingLinks");
     }
     
@@ -44,9 +43,9 @@ export const getPopular = async (req, res) => {
   try {
     let links;
 
-    links = await LinkModel.find().sort({numIncomingLinks: -1}).limit(10).populate("outgoingLinks").populate("incomingLinks");
+    links = await LinkModel.find().sort({numIncomingLinks: -1}).limit(10).populate("incomingLinks");
     //leave the receiving of page information to the client since it says that that is ok in the requirements
-    res.status(200).json(products);
+    res.status(200).json(links);
   } catch (error) {
     res.status(404).json({ message: error.message });
   }

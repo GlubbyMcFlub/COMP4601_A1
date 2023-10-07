@@ -3,19 +3,24 @@ const { Schema } = mongoose;
 
 const linkSchema = new Schema(
 	{
-		name: {
+		title: {	//N-0, technically not required
+			type: String,
+			required: true,
+		},	
+		link: {	//view-source:https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html
 			type: String,
 			required: true,
 		},
-		numIncomingLinks: {
+		numIncomingLinks: {	//increment
 			type: Number,
 			required: true,
 		},
-		//whatever other page info we deem necessary
-		//title (prolly change name to title)
-		//paragraph body
-		incomingLinks: [{ type: Schema.Types.ObjectId, ref: "linkSchema" }],
-		outgoingLinks: [{ type: Schema.Types.ObjectId, ref: "linkSchema" }],
+		paragraph: {	//all the fruits, technically not required
+			type: String,
+			required: true,
+		},
+		incomingLinks: [{ type: Schema.Types.ObjectId, ref: "linkSchema" }],	//corresponding mongoose id
+		outgoingLinks: [{ type: Schema.Types.ObjectId, ref: "linkSchema" }],	//corresponding mongoose id, technically not required
 	},
 	{ timestamps: true }
 );
