@@ -55,7 +55,7 @@ export const createLink = async (req, res) => {
 			outgoingLinks: outgoingLinks,
 		});
 
-		console.log(newLink);
+		console.log("New link created: ", newLink.link);
 		await newLink.save();
 		res.status(201).json(newLink);
 	} catch (error) {

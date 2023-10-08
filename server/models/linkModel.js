@@ -16,8 +16,8 @@ const linkSchema = new Schema(
 			type: String,
 			required: true,
 		},
-		incomingLinks: [{ type: Schema.Types.ObjectId, ref: "LinkModel" }],
-		outgoingLinks: [{ type: Schema.Types.ObjectId, ref: "LinkModel" }],
+		incomingLinks: [],
+		outgoingLinks: [],
 	},
 	{ timestamps: true }
 );
