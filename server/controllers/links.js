@@ -40,25 +40,49 @@ export const getPopular = async (req, res) => {
 };
 
 export const createLink = async (req, res) => {
-	const { title, link, paragraph, outgoingLinks } = req.body;
+	const { paragraph, link, title, outgoingLinks, incomingLink } = req.body;
+	const query = {link: link};
 
 	try {
-		const doesLinkExist = await LinkModel.findOne({ link: link });
-
-		if (doesLinkExist)
-			return res.status(400).json({ message: "Link already exists" });
-
-		const newLink = new LinkModel({
-			title: title,
-			link: link,
-			paragraph: paragraph,
-			outgoingLinks: outgoingLinks,
-		});
-
-		console.log("New link created: ", newLink.link);
-		await newLink.save();
-		res.status(201).json(newLink);
+		const exists = await LinkModel.exists(query);
+		if (exists) {
+			let newLink = await LinkModel.findOneAndUpdate(query, {
+				paragraph: paragraph,
+				title: title,
+				outgoingLinks: outgoingLinks,
+				$push: { incomingLinks: incomingLink},
+			});
+			console.log("UPDATED: ", newLink.link);
+			await newLink.save();
+			res.status(200).json(newLink);
+		} else {
+			console.log("incominglink: ", incomingLink);
+			let newLink = new LinkModel({
+				paragraph: paragraph,
+				link: link,
+				title: title,
+				outgoingLinks: outgoingLinks,
+				incomingLinks: [incomingLink],
+				// $push: { incomingLinks: incomingLink},
+			});
+			console.log("CREATED: ", newLink.link);
+			await newLink.save();
+			res.status(201).json(newLink); 
+		}
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
 };
+
+// export const updateLink = async (req, res) => {
+// 	const { url, incomingLink } = req.body;
+
+// 	try {
+// 		const link = await LinkModel.findOneAndUpdate({ link: url}, { $push: {incomingLinks: incomingLink }});
+
+// 		await link.save();
+// 		res.status(201).json(link);
+// 	} catch (error) {
+// 		res.status(400).json({ message: error.message });
+// 	}
+// };

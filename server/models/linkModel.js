@@ -5,7 +5,7 @@ const linkSchema = new Schema(
 	{
 		title: {
 			type: String,
-			required: true,
+			default: "",
 		},
 		link: {
 			type: String,
@@ -14,7 +14,7 @@ const linkSchema = new Schema(
 		},
 		paragraph: {
 			type: String,
-			required: true,
+			default: "",
 		},
 		incomingLinks: [],
 		outgoingLinks: [],

@@ -14,18 +14,12 @@ const c = new Crawler({
 			const $ = res.$;
 			const baseUrl = new URL(res.options.uri);
 			const url = baseUrl.href;
-			console.log("Now on: ", url);
 			const outgoingLinks = $("a")
 				.map(function () {
 					const link = new URL($(this).attr("href"), baseUrl);
 					return link.href;
 				})
-				.get()
-				.filter((link) => !links.has(link));
-			// if links.has(Link)
-			// const postData = {
-			// linkToUpdate: link,
-			// incomingLinks: url,
+				.get();
 			// send post request to update incomingLinks
 			const paragraph = $("p").text();
 
@@ -33,7 +27,7 @@ const c = new Crawler({
 				title: url,
 				link: url,
 				paragraph: paragraph,
-				outgoingLinks: outgoingLinks,
+				outgoingLinks: outgoingLinks
 			};
 
 			try {
@@ -48,24 +42,41 @@ const c = new Crawler({
 				const data = await response.json();
 				if (response.status === 201) {
 					links.add(url);
+					outgoingLinks.forEach(async (link) => {
+						let outgoingLinkPostData = {
+							link: link,
+							incomingLink: url,
+						};
+
+						const outgoingLinkResponse = await fetch("http://localhost:5000/links/", {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+							},
+							body: JSON.stringify(outgoingLinkPostData),
+						});
+						const outgoingLinkdata = await outgoingLinkResponse.json();
+						if (outgoingLinkResponse.status === 201) {
+							links.add(link);
+							c.queue(link);
+						}else if (!outgoingLinkResponse.status === 200){
+							console.error("Failed to save or update link. Error: ", outgoingLinkdata.message);
+						}
+					});
 					console.log("Link saved:", data.link);
 				} else {
-					console.error("Failed to save link. Error: ", data.message);
+					console.error("Failed to save or update link. Error: ", data.message);
 				}
 			} catch (err) {
-				console.error("Failed to save link. Error: ", err.message);
+				console.error("Failed to save or update link. Error: ", err.message);
 			}
-			// Queue the outgoing links for crawling
-			outgoingLinks.forEach((link) => {
-				links.add(link);
-				c.queue(link);
-			});
 		}
 		done();
 	},
 });
 
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+// c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 
 c.on("drain", function () {
 	const endTime = new Date();
