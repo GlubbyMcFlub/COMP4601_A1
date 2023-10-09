@@ -16,8 +16,14 @@ const linkSchema = new Schema(
 			type: String,
 			default: "",
 		},
-		incomingLinks: [],
-		outgoingLinks: [],
+		incomingLinks: {
+            type: [String],
+            default: [],
+        },
+        outgoingLinks: {
+            type: [String],
+            default: [],
+        },
 	},
 	{ timestamps: true }
 );

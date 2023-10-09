@@ -9,6 +9,5 @@ router.get("/", getLinks);
 router.get("/popular", getPopular);
 
 router.post("/", createLink);
-// router.put("/", updateLink);
 
 export default router;

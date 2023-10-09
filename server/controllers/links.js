@@ -11,7 +11,7 @@ export const getLinks = async (req, res) => {
 			if (!mongoose.Types.ObjectId.isValid(id)) {
 				return res.status(400).json({ message: "Invalid link ID" });
 			}
-			const foundLink = await LinkModel.findById(id).populate("incomingLinks");
+			const foundLink = await LinkModel.findById(id);
 			if (!foundLink) {
 				return res.status(404).json({ message: "Link not found" });
 			}
@@ -29,10 +29,12 @@ export const getLinks = async (req, res) => {
 
 export const getPopular = async (req, res) => {
 	try {
-		const links = await LinkModel.find()
-			.sort({ numIncomingLinks: -1 })
-			.limit(10)
-			.populate("incomingLinks");
+		const links = await LinkModel.aggregate([
+            { $addFields: { numIncomingLinks: { $size: "$incomingLinks" } } },
+            { $sort: { numIncomingLinks: -1 } },
+            { $limit: 10 }
+        ]);
+		
 		res.status(200).json(links);
 	} catch (error) {
 		res.status(500).json({ message: error.message });
@@ -51,21 +53,18 @@ export const createLink = async (req, res) => {
 				title: title,
 				outgoingLinks: outgoingLinks,
 				$push: { incomingLinks: incomingLink},
-			});
-			console.log("UPDATED: ", newLink.link);
+			},
+			{ new: true });
 			await newLink.save();
 			res.status(200).json(newLink);
 		} else {
-			console.log("incominglink: ", incomingLink);
 			let newLink = new LinkModel({
 				paragraph: paragraph,
 				link: link,
 				title: title,
 				outgoingLinks: outgoingLinks,
-				incomingLinks: [incomingLink],
-				// $push: { incomingLinks: incomingLink},
+				incomingLinks: incomingLink ? [incomingLink] : [],
 			});
-			console.log("CREATED: ", newLink.link);
 			await newLink.save();
 			res.status(201).json(newLink); 
 		}
@@ -73,16 +72,3 @@ export const createLink = async (req, res) => {
 		res.status(400).json({ message: error.message });
 	}
 };
-
-// export const updateLink = async (req, res) => {
-// 	const { url, incomingLink } = req.body;
-
-// 	try {
-// 		const link = await LinkModel.findOneAndUpdate({ link: url}, { $push: {incomingLinks: incomingLink }});
-
-// 		await link.save();
-// 		res.status(201).json(link);
-// 	} catch (error) {
-// 		res.status(400).json({ message: error.message });
-// 	}
-// };

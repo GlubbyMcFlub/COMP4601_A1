@@ -27,7 +27,7 @@ const c = new Crawler({
 				title: url,
 				link: url,
 				paragraph: paragraph,
-				outgoingLinks: outgoingLinks
+				outgoingLinks: outgoingLinks,
 			};
 
 			try {
@@ -40,7 +40,8 @@ const c = new Crawler({
 				});
 
 				const data = await response.json();
-				if (response.status === 201) {
+				
+				if (response.status === 201 || response.status ===200) {
 					links.add(url);
 					outgoingLinks.forEach(async (link) => {
 						let outgoingLinkPostData = {
@@ -75,8 +76,7 @@ const c = new Crawler({
 	},
 });
 
-c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-// c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 
 c.on("drain", function () {
 	const endTime = new Date();
