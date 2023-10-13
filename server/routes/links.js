@@ -1,11 +1,11 @@
 import express from "express";
 
 // controllers
-import { createLink, getLinks, getPopular } from "../controllers/links.js";
+import { createLink, getPopular, searchLinks } from "../controllers/links.js";
 
 const router = express.Router();
 
-router.get("/", getLinks);
+router.get("/", searchLinks);
 router.get("/popular", getPopular);
 
 router.post("/", createLink);

@@ -6,7 +6,7 @@ let links = new Set();
 const startTime = new Date();
 
 const c = new Crawler({
-	maxConnections: 60,
+	maxConnections: 1,
 	callback: async function (error, res, done) {
 		if (error) {
 			console.error(error);
@@ -20,11 +20,12 @@ const c = new Crawler({
 					return link.href;
 				})
 				.get();
-			// send post request to update incomingLinks
+
+			// Send post request to update incomingLinks
 			const paragraph = $("p").text();
 
 			const postData = {
-				title: url,
+				title: $("title").text(),
 				link: url,
 				paragraph: paragraph,
 				outgoingLinks: outgoingLinks,
@@ -40,8 +41,8 @@ const c = new Crawler({
 				});
 
 				const data = await response.json();
-				
-				if (response.status === 201 || response.status ===200) {
+
+				if (response.status === 201 || response.status === 200) {
 					links.add(url);
 					outgoingLinks.forEach(async (link) => {
 						let outgoingLinkPostData = {
@@ -49,34 +50,40 @@ const c = new Crawler({
 							incomingLink: url,
 						};
 
-						const outgoingLinkResponse = await fetch("http://localhost:5000/links/", {
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-							},
-							body: JSON.stringify(outgoingLinkPostData),
-						});
+						const outgoingLinkResponse = await fetch(
+							"http://localhost:5000/links/",
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify(outgoingLinkPostData),
+							}
+						);
 						const outgoingLinkdata = await outgoingLinkResponse.json();
 						if (outgoingLinkResponse.status === 201) {
 							links.add(link);
 							c.queue(link);
-						}else if (!outgoingLinkResponse.status === 200){
-							console.error("Failed to save or update link. Error: ", outgoingLinkdata.message);
+						} else if (!outgoingLinkResponse.status === 200) {
+							console.error(
+								"Failed to add outgoing link. Error: ",
+								outgoingLinkdata.message
+							);
 						}
 					});
 					console.log("Link saved:", data.link);
 				} else {
-					console.error("Failed to save or update link. Error: ", data.message);
+					console.error("Bad response from server. Error: ", data.message); //TODO this is a terrible error message
 				}
 			} catch (err) {
-				console.error("Failed to save or update link. Error: ", err.message);
+				console.error("Error: ", err.message);
 			}
 		}
 		done();
 	},
 });
 
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
 
 c.on("drain", function () {
 	const endTime = new Date();
