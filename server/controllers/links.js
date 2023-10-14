@@ -111,12 +111,24 @@ export const searchLinks = async (req, res) => {
 	const { query } = req.query;
 
 	try {
-		const links = index.search(query, {
+		const searchResults = index.search(query, {
 			fields: { paragraph: { boost: 1 }, title: { boost: 2 } },
-		});
-		if (links.length === 0)
+		}).slice(0, 2);
+		if (searchResults.length === 0){
 			res.status(404).json({ message: "No links found with query: " + query });
-		else res.status(200).json(links);
+		}
+		else{
+			var links = searchResults.map(function (result) {
+				var link = index.documentStore.getDoc(result.ref);
+				return {
+					paragraph: link.paragraph,
+					title: link.title,
+					url: link.link,
+					score: result.score,
+				};
+			});
+		}
+		res.status(200).json(links);
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}

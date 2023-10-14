@@ -83,7 +83,8 @@ const c = new Crawler({
 	},
 });
 
-c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+// c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html"); 
+c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 
 c.on("drain", function () {
 	const endTime = new Date();
