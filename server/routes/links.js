@@ -1,12 +1,18 @@
 import express from "express";
 
 // controllers
-import { createLink, getPopular, searchLinks } from "../controllers/links.js";
+import {
+	createLink,
+	getPopular,
+	populateIndex,
+	searchLinks,
+} from "../controllers/links.js";
 
 const router = express.Router();
 
 router.get("/", searchLinks);
 router.get("/popular", getPopular);
+router.get("/populate", populateIndex);
 
 router.post("/", createLink);
 

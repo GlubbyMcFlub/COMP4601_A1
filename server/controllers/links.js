@@ -74,7 +74,6 @@ export const createLink = async (req, res) => {
 					title: savedLink.title,
 				};
 				index.addDoc(doc);
-				console.log("Added ", doc);
 			});
 			res.status(200).json(newLink);
 		} else {
@@ -97,7 +96,6 @@ export const createLink = async (req, res) => {
 						title: title,
 					};
 					index.addDoc(doc);
-					console.log("Added ", doc);
 				} else console.log("Page has not been visited yet");
 			});
 			res.status(201).json(newLink);
@@ -111,13 +109,14 @@ export const searchLinks = async (req, res) => {
 	const { query } = req.query;
 
 	try {
-		const searchResults = index.search(query, {
-			fields: { paragraph: { boost: 1 }, title: { boost: 2 } },
-		}).slice(0, 2);
-		if (searchResults.length === 0){
+		const searchResults = index
+			.search(query, {
+				fields: { paragraph: { boost: 1 }, title: { boost: 2 } },
+			})
+			.slice(0, 10);
+		if (searchResults.length === 0) {
 			res.status(404).json({ message: "No links found with query: " + query });
-		}
-		else{
+		} else {
 			var links = searchResults.map(function (result) {
 				var link = index.documentStore.getDoc(result.ref);
 				return {
@@ -134,20 +133,23 @@ export const searchLinks = async (req, res) => {
 	}
 };
 
-// tokenization function to split paragraph into words
-// stop word removal function to remove stop words from paragraph
-// stemming function to stem words in paragraph (variations of same word)
+// Alternative to running the crawler every time the server starts
+export const populateIndex = async (req, res) => {
+	try {
+		const linkModels = await LinkModel.find();
 
-// npm install natural, stopword
-// boolean models and vector space models for information retrieval
-/*inverse document frequency (idf)
+		linkModels.forEach((linkModel) => {
+			const doc = {
+				id: linkModel.id,
+				paragraph: linkModel.paragraph,
+				title: linkModel.title,
+				link: linkModel.link,
+			};
 
-TFIDF=log(1 + tftd)*log(N/dft)
-q dimensional vector, q is # search terms
-compute cosine of angle (cosine (0 deg) = 1, cos(90deg)=0) -> cosine similarity
-
-end up with range between 0 and 1
-
-for numerator, for each index, for each unique word , multiply vector of query and vector of document
-do denominator too
-*/
+			index.addDoc(doc);
+		});
+		res.status(200).json({ message: "Index populated" });
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+};
