@@ -111,11 +111,13 @@ export const searchLinks = async (req, res) => {
 	try {
 		const searchResults = index
 			.search(query, {
-				fields: { paragraph: { boost: 1 }, title: { boost: 2 } },
+				fields: { paragraph: { boost: 2 }, title: { boost: 2 } },
 			})
 			.slice(0, 10);
 		if (searchResults.length === 0) {
-			res.status(404).json({ message: "No links found with query: " + query });
+			res
+				.status(404)
+				.json({ message: "No results found with query: " + query });
 		} else {
 			var links = searchResults.map(function (result) {
 				var link = index.documentStore.getDoc(result.ref);

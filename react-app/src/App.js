@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import SearchResult from "./components/SearchResult/SearchResult";
 
@@ -6,11 +6,22 @@ function App() {
 	const [query, setQuery] = useState("");
 	const [searchResults, setSearchResults] = useState([]);
 	const [hasSearched, setHasSearched] = useState(false);
+	const [isDarkMode, setIsDarkMode] = useState(
+		window.matchMedia("(prefers-color-scheme: dark)").matches
+	);
+
+	useEffect(() => {
+		if (isDarkMode) {
+			document.body.classList.add("dark-mode");
+		} else {
+			document.body.classList.remove("dark-mode");
+		}
+	}, [isDarkMode]);
 
 	const handleSearch = async () => {
 		try {
 			const response = await fetch(
-				`/links/?query=${encodeURIComponent(query)}`
+				`/links/?query=${encodeURIComponent(query.toLowerCase())}`
 			);
 			const data = await response.json();
 			setSearchResults(data);
@@ -26,6 +37,10 @@ function App() {
 		}
 	};
 
+	const handleThemeChange = () => {
+		setIsDarkMode(!isDarkMode);
+	};
+
 	return (
 		<div className="App">
 			<h1>Qooqle</h1>
@@ -37,6 +52,7 @@ function App() {
 				placeholder="Whatcha lookin' for?"
 			/>
 			<button onClick={handleSearch}>Search</button>
+			<button onClick={handleThemeChange}>Change Theme</button>
 			{hasSearched && (
 				<div className="search-results">
 					{searchResults.length > 0 ? (
@@ -46,11 +62,11 @@ function App() {
 								title={result.title}
 								paragraph={result.paragraph}
 								url={result.url}
-								result={index}
+								result={index + 1}
 							/>
 						))
 					) : (
-						<p>No results found. {searchResults.message}</p>
+						<p className="error-message">{searchResults.message}</p>
 					)}
 				</div>
 			)}
