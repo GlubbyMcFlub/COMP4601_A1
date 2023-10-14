@@ -8,21 +8,21 @@
 }
 
 body.light-mode {
-	--primary-bg: var(--light-primary-bg, #ffffff);
-	--secondary-bg: var(--light-secondary-bg, #f0f0f0);
-	--primary-text: var(--light-primary-text, #333333);
-	--secondary-text: var(--light-secondary-text, #666666);
-	--accent-color: var(--light-accent-color, #007bff);
-	--error: var(--light-error, #dc3545);
+	--primary-bg: #ffffff;
+	--secondary-bg: #f0f0f0;
+	--primary-text: #333333;
+	--secondary-text: #666666;
+	--accent-color: #007bff;
+	--error: #dc3545;
 }
 
 body.dark-mode {
-	--primary-bg: var(--dark-primary-bg, #1e1e1e);
-	--secondary-bg: var(--dark-secondary-bg, #2a2a2a);
-	--primary-text: var(--dark-primary-text, #ffffff);
-	--secondary-text: var(--dark-secondary-text, #a0a0a0);
-	--accent-color: var(--dark-accent-color, #4caf50);
-	--error: var(--dark-error, #dc3545);
+	--primary-bg: #1e1e1e;
+	--secondary-bg: #2a2a2a;
+	--primary-text: #ffffff;
+	--secondary-text: #a0a0a0;
+	--accent-color: #4caf50;
+	--error: #dc3545;
 }
 
 body {

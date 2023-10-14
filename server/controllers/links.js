@@ -6,6 +6,7 @@ const index = elasticlunr(function () {
 	this.addField("paragraph");
 	this.addField("title");
 	this.addField("link");
+	this.addField("outgoingLinks");
 	this.setRef("id");
 });
 
@@ -111,7 +112,12 @@ export const searchLinks = async (req, res) => {
 	try {
 		const searchResults = index
 			.search(query, {
-				fields: { paragraph: { boost: 2 }, title: { boost: 2 } },
+				// TODO more experimentation and fine-tuning of our search algorithm
+				fields: {
+					paragraph: { boost: 3 },
+					title: { boost: 2 },
+					outgoingLinks: { boost: 1 },
+				},
 			})
 			.slice(0, 10);
 		if (searchResults.length === 0) {
@@ -146,6 +152,7 @@ export const populateIndex = async (req, res) => {
 				paragraph: linkModel.paragraph,
 				title: linkModel.title,
 				link: linkModel.link,
+				outgoingLinks: linkModel.outgoingLinks,
 			};
 
 			index.addDoc(doc);
