@@ -62,6 +62,7 @@ function App() {
 								title={result.title}
 								paragraph={result.paragraph}
 								url={result.url}
+								score={result.score}
 								result={index + 1}
 							/>
 						))
