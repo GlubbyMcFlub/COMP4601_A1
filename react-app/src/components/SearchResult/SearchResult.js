@@ -4,7 +4,9 @@ const SearchResult = ({ title, paragraph, url, result, score }) => {
 	return (
 		<div className="search-result">
 			<h2>{title}</h2>
-			<h4>{url}</h4>
+			<a href={url} target="_blank" rel="noopener noreferrer">
+				<h4>{url}</h4>
+			</a>
 			<p>{paragraph}</p>
 			<p>Score = {score}</p>
 			<footer>Result #: {result}</footer>
