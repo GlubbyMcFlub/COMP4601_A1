@@ -12,8 +12,8 @@ const router = express.Router();
 
 router.get("/", searchLinks);
 router.get("/popular", getPopular);
-router.get("/populate", populateIndex);
 
+router.post("/populate", populateIndex);
 router.post("/", createLink);
 
 export default router;
