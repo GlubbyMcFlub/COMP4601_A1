@@ -79,23 +79,28 @@ export const createLink = async (req, res) => {
 
 export const searchLinks = async (req, res) => {
 	// const { query } = req.query;
+	const ALPHA = 0.1;
+	const EUC_STOPPING_THRESHOLD = 0.0001;
 
 	try {
-		var links = await LinkModel.find().sort({ title: 1 }); //ascending by title
-		var pageRanks = new Matrix(1, links.length);
-		pageRanks.set(0, 0, 1);
-		const alpha = 0.1;
-		const euclideanStoppingThreshold = 0.0001;
-		var probabilityMatrix = new Matrix(links.length, links.length);
-
-		//populate probability matrix
-		links.forEach((link, row = 0) => {
-			link.outgoingLinks.forEach((outgoingLink) => {
-				const column = links.findIndex((link) => link.link === outgoingLink);
-				probabilityMatrix.set(row, column, 1);
-			});
-			row++;
+		const links = await LinkModel.find().sort({ title: 1 }); //ascending by title
+		//create map of links to index in links array
+		const linkIndexingMap = {};
+		links.forEach((link, index) => {
+			{
+				linkIndexingMap[link.link] = index;
+			}
 		});
+
+		//create probability matrix
+		const probabilityMatrix = new Matrix(links.length, links.length);
+		links.forEach((link, row) => {
+			link.outgoingLinks.forEach((outgoingLink) => {
+				const col = linkIndexingMap[outgoingLink];
+				probabilityMatrix.set(row, col, 1);
+			});
+		});
+
 		//if a row has all 0's, then set each entry to links.length to simulate teleportation
 		//otherwise, set each 1 to 1/numOnes to show the probability that a link will be chosen
 		for (let i = 0; i < probabilityMatrix.rows; i++) {
@@ -116,38 +121,103 @@ export const searchLinks = async (req, res) => {
 		}
 
 		//multiply matrix by the chance that a link will be chosen
-		probabilityMatrix.mul(1 - alpha);
+		probabilityMatrix.mul(1 - ALPHA);
 
 		//add the chance that a teleportation will occur
 		let teleportationMatrix = new Matrix(links.length, links.length);
 		for (let i = 0; i < probabilityMatrix.rows; i++) {
 			teleportationMatrix.setRow(
 				i,
-				Array(probabilityMatrix.columns).fill(alpha / links.length)
+				Array(probabilityMatrix.columns).fill(ALPHA / links.length)
 			);
 		}
+
 		probabilityMatrix.add(teleportationMatrix);
 
 		//power iteration. multiply pageRanks matrix by probabilityMatrix until euclidean distance between last two vectors < 0.0001
-		let oldpageRanks;
+		let pageRanks = new Matrix(1, links.length);
+		pageRanks.set(0, 0, 1);
+		let oldPageRanks;
 		do {
-			oldpageRanks = pageRanks.clone();
+			oldPageRanks = pageRanks.clone();
 			pageRanks = pageRanks.mmul(probabilityMatrix);
 		} while (
-			Math.abs(oldpageRanks.norm() - pageRanks.norm()) >=
-			euclideanStoppingThreshold
+			Math.abs(oldPageRanks.norm() - pageRanks.norm()) >= EUC_STOPPING_THRESHOLD
 		);
 
 		//create object which includes pageRanks
 		var rankedLinks = links.map(function (link, column = 0) {
 			return {
 				url: link.link,
-				pageRank: pageRanks.get(0, column),
+				pageRank: pageRanks.get(0, column).toFixed(10),
 			};
 		});
+
 		rankedLinks.sort((a, b) => b.pageRank - a.pageRank);
 
-		console.log(rankedLinks);
+		// var pageRanks = new Matrix(1, links.length);
+		// pageRanks.set(0, 0, 1);
+		// var probabilityMatrix = new Matrix(links.length, links.length);
+
+		// //populate probability matrix
+		// links.forEach((link, row = 0) => {
+		// 	link.outgoingLinks.forEach((outgoingLink) => {
+		// 		const column = links.findIndex((link) => link.link === outgoingLink);
+		// 		probabilityMatrix.set(row, column, 1);
+		// 	});
+		// 	row++;
+		// });
+		// //if a row has all 0's, then set each entry to links.length to simulate teleportation
+		// //otherwise, set each 1 to 1/numOnes to show the probability that a link will be chosen
+		// for (let i = 0; i < probabilityMatrix.rows; i++) {
+		// 	const numOnes = probabilityMatrix
+		// 		.getRow(i)
+		// 		.reduce((count, value) => (value === 1 ? count + 1 : count), 0);
+		// 	if (numOnes == 0) {
+		// 		probabilityMatrix.setRow(
+		// 			i,
+		// 			Array(probabilityMatrix.columns).fill(1 / links.length)
+		// 		);
+		// 	} else {
+		// 		let editedRow = probabilityMatrix
+		// 			.getRow(i)
+		// 			.map((value) => (value * 1) / numOnes);
+		// 		probabilityMatrix.setRow(i, editedRow);
+		// 	}
+		// }
+
+		// //multiply matrix by the chance that a link will be chosen
+		// probabilityMatrix.mul(1 - ALPHA);
+
+		// //add the chance that a teleportation will occur
+		// let teleportationMatrix = new Matrix(links.length, links.length);
+		// for (let i = 0; i < probabilityMatrix.rows; i++) {
+		// 	teleportationMatrix.setRow(
+		// 		i,
+		// 		Array(probabilityMatrix.columns).fill(ALPHA / links.length)
+		// 	);
+		// }
+		// probabilityMatrix.add(teleportationMatrix);
+
+		// //power iteration. multiply pageRanks matrix by probabilityMatrix until euclidean distance between last two vectors < 0.0001
+		// let oldpageRanks;
+		// do {
+		// 	oldpageRanks = pageRanks.clone();
+		// 	pageRanks = pageRanks.mmul(probabilityMatrix);
+		// } while (
+		// 	Math.abs(oldpageRanks.norm() - pageRanks.norm()) >= EUC_STOPPING_THRESHOLD
+		// );
+
+		// //create object which includes pageRanks
+		// var rankedLinks = links.map(function (link, column = 0) {
+		// 	return {
+		// 		url: link.link,
+		// 		pageRank: pageRanks.get(0, column),
+		// 	};
+		// });
+		// rankedLinks.sort((a, b) => b.pageRank - a.pageRank);
+
+		// console.log(rankedLinks);
 
 		// var pageRanks =
 		// const searchResults = index
