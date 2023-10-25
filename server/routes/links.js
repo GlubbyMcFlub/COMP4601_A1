@@ -10,6 +10,7 @@ import {
 
 const router = express.Router();
 
+// support functionality for personal and fruit
 router.get("/", searchLinks);
 router.get("/popular", getPopular);
 

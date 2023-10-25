@@ -90,5 +90,7 @@ c.on("drain", function () {
 	const endTime = new Date();
 	const totalTime = Math.round((endTime - startTime) / 1000);
 
+	// calculate PageRank
+	// Update PageRank for each link in DB
 	console.log("Finished in " + totalTime + " seconds");
 });

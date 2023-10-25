@@ -24,6 +24,7 @@ const linkSchema = new Schema(
 			type: [String],
 			default: [],
 		},
+		// include score and PageRank
 	},
 	{ timestamps: true }
 );

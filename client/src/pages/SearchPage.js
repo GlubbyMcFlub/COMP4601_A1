@@ -20,6 +20,10 @@ function SearchPage() {
 
 	const handleSearch = async () => {
 		try {
+			// needs to support the following parameters:
+			// q - query
+			// boost - true or false
+			// limit - number of results to return
 			const response = await fetch(
 				`/links/?query=${encodeURIComponent(query.toLowerCase())}`
 			);
@@ -41,6 +45,7 @@ function SearchPage() {
 		setIsDarkMode(!isDarkMode);
 	};
 
+	// add boost checkbox, and number of results form/slider
 	return (
 		<div className="SearchPage">
 			<h1>Qooqle</h1>

@@ -197,6 +197,8 @@ export const searchLinks = async (req, res) => {
 		});
 
 		res.status(200).json(links);
+		// need to support for postman the following:
+		// name, url, score, title, pr
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
