@@ -24,6 +24,14 @@ const linkSchema = new Schema(
             type: [String],
             default: [],
         },
+		pageRank:{
+			type: Number,
+			default: 0
+		},
+		score:{
+			type: Number,
+			default: 0
+		}
 	},
 	{ timestamps: true }
 );

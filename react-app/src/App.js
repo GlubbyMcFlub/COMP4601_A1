@@ -63,6 +63,7 @@ function App() {
 								paragraph={result.paragraph}
 								url={result.url}
 								score={result.score}
+								pageRank={result.pageRank}
 								result={index + 1}
 							/>
 						))

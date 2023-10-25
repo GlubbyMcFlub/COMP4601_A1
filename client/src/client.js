@@ -83,12 +83,49 @@ const c = new Crawler({
 	},
 });
 
-// c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html"); 
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html"); 
+// c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 
-c.on("drain", function () {
-	const endTime = new Date();
-	const totalTime = Math.round((endTime - startTime) / 1000);
+c.on("drain", async function () {
+	try{
+		const scoreResponse = await fetch("http://localhost:5000/links/score", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		});
+		
+		await scoreResponse.json();
+		
+		if (scoreResponse.status === 200){
+			console.log("Calculated scores");
+		}
+		else{
+			console.error("Bad response when calculating scores");
+		}
 
-	console.log("Finished in " + totalTime + " seconds");
+		const pageRankResponse = await fetch("http://localhost:5000/links/pageRank", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		});
+
+		await pageRankResponse.json();
+
+		if (pageRankResponse.status === 200){
+			console.log("Calculated pageRanks");
+		}
+		else{
+			console.error("Bad response when calculating pageRanks");
+		}
+		const endTime = new Date();
+		const totalTime = Math.round((endTime - startTime) / 1000);
+		console.log("Finished in " + totalTime + " seconds");
+	}
+	catch(err){
+		console.error("Error on drain: ", err.message);
+	}
 });

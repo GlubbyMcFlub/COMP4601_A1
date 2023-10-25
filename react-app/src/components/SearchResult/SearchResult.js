@@ -1,6 +1,6 @@
 import React from "react";
 
-const SearchResult = ({ title, paragraph, url, result, score }) => {
+const SearchResult = ({ title, paragraph, url, result, score, pageRank }) => {
 	return (
 		<div className="search-result">
 			<h2>{title}</h2>
@@ -8,7 +8,8 @@ const SearchResult = ({ title, paragraph, url, result, score }) => {
 				<h4>{url}</h4>
 			</a>
 			<p>{paragraph}</p>
-			<p>Score = {score}</p>
+			<p>Score = {score}</p> 
+			<p>pageRank = {pageRank}</p>
 			<footer>Result #: {result}</footer>
 		</div>
 	);
