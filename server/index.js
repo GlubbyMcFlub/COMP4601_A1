@@ -1,15 +1,20 @@
 // Imports
 import bodyParser from "body-parser";
 import cors from "cors";
+import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
 
 // Routes
 import links from "./routes/links.js";
 
+// Load
+dotenv.config({ path: "./config.env" });
+
+// Variables
 const app = express();
-const CONNECTION_URL =
-	"mongodb+srv://davidaddison:davidaddison123@labscluster.t59zal5.mongodb.net/?retryWrites=true&w=majority";
+const CONNECTION_URL = String(process.env.CONNECTION_URL);
+console.log(CONNECTION_URL);
 const PORT = process.env.PORT || 5000;
 
 // Database & Start Server

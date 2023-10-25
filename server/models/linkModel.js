@@ -17,21 +17,13 @@ const linkSchema = new Schema(
 			default: "",
 		},
 		incomingLinks: {
-            type: [String],
-            default: [],
-        },
-        outgoingLinks: {
-            type: [String],
-            default: [],
-        },
-		pageRank:{
-			type: Number,
-			default: 0
+			type: [String],
+			default: [],
 		},
-		score:{
-			type: Number,
-			default: 0
-		}
+		outgoingLinks: {
+			type: [String],
+			default: [],
+		},
 	},
 	{ timestamps: true }
 );

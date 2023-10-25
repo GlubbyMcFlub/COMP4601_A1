@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "crawler": "^1.4.0",
+    "node-fetch": "^3.3.2"
+  }
+}
