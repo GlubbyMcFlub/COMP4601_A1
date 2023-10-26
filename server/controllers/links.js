@@ -11,55 +11,52 @@ import LinkModel from "../models/linkModel.js";
 // });
 // index.addDoc({id: "hfiwoefioew"});
 
-export const getLinks = async (req, res) => {
-	try {
-		const { id, link } = req.query;
+export const search = async (req, res) => {
+  try {
+    const { id, link } = req.query;
 
-		let links;
+    let links;
 
-		if (id) {
-			if (!mongoose.Types.ObjectId.isValid(id)) {
-				return res.status(400).json({ message: "Invalid link ID" });
-			}
-			const foundLink = await LinkModel.findById(id);
-			if (!foundLink) {
-				return res.status(404).json({ message: "Link not found" });
-			}
-			res.status(200).json(foundLink);
-			return;
-		}
-		else if (link){
-			const exists = await LinkModel.exists({link:link});
-			if(exists){
-				const foundLink = await LinkModel.findOne({link:link});
-				return res.status(200).json(foundLink);
-			}
-			else{
-				return res.status(404).json({ message: "Link not found" });
-			}
-		}
-		else {
-			links = await LinkModel.find();
-		}
+    if (id) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid link ID" });
+      }
+      const foundLink = await LinkModel.findById(id);
+      if (!foundLink) {
+        return res.status(404).json({ message: "Link not found" });
+      }
+      res.status(200).json(foundLink);
+      return;
+    } else if (link) {
+      const exists = await LinkModel.exists({ link: link });
+      if (exists) {
+        const foundLink = await LinkModel.findOne({ link: link });
+        return res.status(200).json(foundLink);
+      } else {
+        return res.status(404).json({ message: "Link not found" });
+      }
+    } else {
+      links = await LinkModel.find();
+    }
 
-		res.status(200).json(links);
-	} catch (err) {
-		res.status(400).json({ message: err.message });
-	}
+    res.status(200).json(links);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };
 
 export const getPopular = async (req, res) => {
-	try {
-		const links = await LinkModel.aggregate([
-			{ $addFields: { numIncomingLinks: { $size: "$incomingLinks" } } },
-			{ $sort: { numIncomingLinks: -1 } },
-			{ $limit: 10 },
-		]);
+  try {
+    const links = await LinkModel.aggregate([
+      { $addFields: { numIncomingLinks: { $size: "$incomingLinks" } } },
+      { $sort: { numIncomingLinks: -1 } },
+      { $limit: 10 },
+    ]);
 
-		res.status(200).json(links);
-	} catch (error) {
-		res.status(500).json({ message: error.message });
-	}
+    res.status(200).json(links);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // export const createLink = async (req, res) => {
@@ -110,24 +107,34 @@ export const getPopular = async (req, res) => {
 // 	}
 // };
 
-export const createLink = async (req, res) => {
-	const { link, update } = req.body;
-	const query = { link:link };
+export const updateLink = async (req, res) => {
+  const { link, update } = req.body;
+  const query = { link: link };
 
-	try {
-		let newLink = await LinkModel.findOneAndUpdate(
-			query,
-			update,
-			{
-				upsert: true,
-				new: true,
-			}
-		);
-		res.status(200).json(newLink);
-
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
+  try {
+    // console.log(link);
+    const newLink = await LinkModel.findOneAndUpdate(query, update, {
+      upsert: true,
+      new: true,
+      includeResultMetadata: true,
+    });
+    // if (newLink) {
+    //   if (newLink.createdAt == newLink.updatedAt) {
+    //     console.log("created");
+    //   } else {
+    //     console.log("updated");
+    //   }
+    // } else {
+    //   console.log("doc NOT updated");
+    // }
+    if (newLink.lastErrorObject.updatedExisting) {
+      res.status(201).json(newLink);
+    } else {
+      res.status(200).json(newLink);
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 // export const searchLinks = async (req, res) => {
@@ -217,55 +224,55 @@ export const createLink = async (req, res) => {
 // };
 
 export const searchLinks = async (req, res) => {
-	const { query } = req.query;
+  const { query } = req.query;
 
-	try {
-		const searchResults = index
-			.search(query, {
-				fields: {
-					paragraph: { boost: 3 },
-					title: { boost: 2 },
-					outgoingLinks: { boost: 1 },
-				},
-			})
-			.slice(0, 10);
+  try {
+    const searchResults = index
+      .search(query, {
+        fields: {
+          paragraph: { boost: 3 },
+          title: { boost: 2 },
+          outgoingLinks: { boost: 1 },
+        },
+      })
+      .slice(0, 10);
 
-		const links = searchResults.map(function (result) {
-			const link = index.documentStore.getDoc(result.ref);
-			return {
-				paragraph: link.paragraph,
-				title: link.title,
-				// url: link.link,
-				score: result.score,
-			};
-		});
+    const links = searchResults.map(function (result) {
+      const link = index.documentStore.getDoc(result.ref);
+      return {
+        paragraph: link.paragraph,
+        title: link.title,
+        // url: link.link,
+        score: result.score,
+      };
+    });
 
-		res.status(200).json(links);
-		// need to support for postman the following:
-		// name, url, score, title, pr
-	} catch (error) {
-		res.status(500).json({ message: error.message });
-	}
+    res.status(200).json(links);
+    // need to support for postman the following:
+    // name, url, score, title, pr
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // Alternative to running the crawler every time the server starts
 export const populateIndex = async (req, res) => {
-	try {
-		const linkModels = await LinkModel.find();
+  try {
+    const linkModels = await LinkModel.find();
 
-		linkModels.forEach((linkModel) => {
-			const doc = {
-				id: linkModel.id,
-				title: linkModel.title,
-				paragraph: linkModel.paragraph,
-				outgoingLinks: linkModel.outgoingLinks.join(" "), // Join outgoingLinks as a string
-			};
+    linkModels.forEach((linkModel) => {
+      const doc = {
+        id: linkModel.id,
+        title: linkModel.title,
+        paragraph: linkModel.paragraph,
+        outgoingLinks: linkModel.outgoingLinks.join(" "), // Join outgoingLinks as a string
+      };
 
-			index.addDoc(doc);
-		});
+      index.addDoc(doc);
+    });
 
-		res.status(200).json({ message: "Index populated" });
-	} catch (error) {
-		res.status(500).json({ message: error.message });
-	}
+    res.status(200).json({ message: "Index populated" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
