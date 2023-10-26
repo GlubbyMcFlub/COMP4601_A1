@@ -11,10 +11,15 @@ const linkSchema = new Schema(
 			type: String,
 			required: true,
 			unique: true,
+			default: "",
 		},
 		paragraph: {
 			type: String,
 			default: "",
+		},
+		wordFrequencies: {
+			type: Map,
+			of: mongoose.Schema.Types.Mixed,
 		},
 		incomingLinks: {
 			type: [String],
@@ -24,7 +29,14 @@ const linkSchema = new Schema(
 			type: [String],
 			default: [],
 		},
-		// include score and PageRank
+		pageRank: {
+			type: Number,
+			default: 0,
+		},
+		score: {
+			type: Number,
+			default: 0,
+		},
 	},
 	{ timestamps: true }
 );

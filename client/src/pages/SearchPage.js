@@ -66,8 +66,10 @@ function SearchPage() {
 								key={index}
 								title={result.title}
 								paragraph={result.paragraph}
-								//url={result.url}
+								url={result.url}
 								score={result.score}
+								wordFrequencies={result.wordFrequencies}
+								pageRank={result.pageRank}
 								result={index + 1}
 							/>
 						))

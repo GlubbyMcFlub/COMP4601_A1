@@ -1,19 +1,19 @@
-import elasticlunr from "elasticlunr";
-import { Matrix } from "ml-matrix";
 import mongoose from "mongoose";
 import LinkModel from "../models/linkModel.js";
 
-// Initialize ElasticLunr index
-const index = elasticlunr(function () {
-	this.addField("title");
-	this.addField("paragraph");
-	this.addField("outgoingLinks");
-	this.setRef("id");
-});
+// import elasticlunr from "elasticlunr";
+// // Initialize ElasticLunr index
+// const index = elasticlunr(function () {
+// 	this.addField("title");
+// 	this.addField("paragraph");
+// 	this.addField("outgoingLinks");
+// 	this.setRef("id");
+// });
+// index.addDoc({id: "hfiwoefioew"});
 
 export const getLinks = async (req, res) => {
 	try {
-		const { id } = req.query;
+		const { id, link } = req.query;
 
 		let links;
 
@@ -27,13 +27,24 @@ export const getLinks = async (req, res) => {
 			}
 			res.status(200).json(foundLink);
 			return;
-		} else {
-			links = await LinkModel.find().populate("incomingLinks");
+		}
+		else if (link){
+			const exists = await LinkModel.exists({link:link});
+			if(exists){
+				const foundLink = await LinkModel.findOne({link:link});
+				return res.status(200).json(foundLink);
+			}
+			else{
+				return res.status(404).json({ message: "Link not found" });
+			}
+		}
+		else {
+			links = await LinkModel.find();
 		}
 
 		res.status(200).json(links);
-	} catch (error) {
-		res.status(500).json({ message: error.message });
+	} catch (err) {
+		res.status(400).json({ message: err.message });
 	}
 };
 
@@ -51,36 +62,69 @@ export const getPopular = async (req, res) => {
 	}
 };
 
+// export const createLink = async (req, res) => {
+// 	const { paragraph, link, title, outgoingLinks, incomingLink, score, pageRank } = req.body;
+// 	// const query = { link: link };
+
+// 	try {
+// 		// const exists = await LinkModel.exists(query);
+// 		// if (exists) {
+// 		// 	let newLink = await LinkModel.findOneAndUpdate(
+// 		// 		query,
+// 		// 		{
+// 		// 			paragraph: paragraph,
+// 		// 			title: title,
+// 		// 			outgoingLinks: outgoingLinks,
+// 		// 			$push: { incomingLinks: incomingLink },
+// 		// 		},
+// 		// 		{ new: true }
+// 		// 	);
+// 		// 	await newLink.save();
+// 		// 	res.status(200).json(newLink);
+// 		// }
+// 		// } else {
+// 		// 	let newLink = new LinkModel({
+// 		// 		paragraph: paragraph,
+// 		// 		link: link,
+// 		// 		title: title,
+// 		// 		outgoingLinks: outgoingLinks,
+// 		// 		incomingLinks: incomingLink ? [incomingLink] : [],
+// 		// 	});
+// 		// 	await newLink.save();
+// 		// 	res.status(201).json(newLink);
+// 		// }
+// 		let newLink = await LinkModel.findOneAndUpdate(
+// 			query,
+// 			{
+// 				paragraph: paragraph ? paragraph : "",
+// 				title: title,
+// 				outgoingLinks: outgoingLinks,
+// 				$push: { incomingLinks: incomingLink },
+// 			},
+// 			{ new: true }
+// 		);
+// 		await newLink.save();
+// 		res.status(200).json(newLink);
+// 	} catch (error) {
+// 		res.status(400).json({ message: error.message });
+// 	}
+// };
+
 export const createLink = async (req, res) => {
-	const { paragraph, link, title, outgoingLinks, incomingLink } = req.body;
-	const query = { link: link };
+	const { link, update } = req.body;
+	const query = { link:link };
 
 	try {
-		const exists = await LinkModel.exists(query);
-		if (exists) {
-			let newLink = await LinkModel.findOneAndUpdate(
-				query,
-				{
-					paragraph: paragraph,
-					title: title,
-					outgoingLinks: outgoingLinks,
-					$push: { incomingLinks: incomingLink },
-				},
-				{ new: true }
-			);
-			await newLink.save();
-			res.status(200).json(newLink);
-		} else {
-			let newLink = new LinkModel({
-				paragraph: paragraph,
-				link: link,
-				title: title,
-				outgoingLinks: outgoingLinks,
-				incomingLinks: incomingLink ? [incomingLink] : [],
-			});
-			await newLink.save();
-			res.status(201).json(newLink);
-		}
+		let newLink = await LinkModel.findOneAndUpdate(
+			query,
+			update,
+			{
+				upsert: true,
+				new: true,
+			}
+		);
+		res.status(200).json(newLink);
+
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
@@ -191,7 +235,7 @@ export const searchLinks = async (req, res) => {
 			return {
 				paragraph: link.paragraph,
 				title: link.title,
-				//url: link.link,
+				// url: link.link,
 				score: result.score,
 			};
 		});

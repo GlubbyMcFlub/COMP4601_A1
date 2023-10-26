@@ -2,6 +2,7 @@ import express from "express";
 
 // controllers
 import {
+	getLinks,
 	createLink,
 	getPopular,
 	populateIndex,
@@ -11,7 +12,7 @@ import {
 const router = express.Router();
 
 // support functionality for personal and fruit
-router.get("/", searchLinks);
+router.get("/", getLinks);
 router.get("/popular", getPopular);
 
 router.post("/populate", populateIndex);
