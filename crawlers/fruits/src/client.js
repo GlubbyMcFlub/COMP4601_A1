@@ -4,10 +4,10 @@ import fetch from "node-fetch";
 import { Matrix } from "ml-matrix";
 
 // Initialize ElasticLunr index
-let index = elasticlunr(function () {
+const index = elasticlunr(function () {
 	this.addField("title");
-	this.addField("paragraph");
 	this.addField("outgoingLinks");
+	this.addField("paragraph");
 	this.setRef("id");
 });
 
@@ -152,18 +152,15 @@ c.on("drain", async function () {
 		links.forEach((link) => {
 			if(link){
 				let doc = {
-					id:link.id,
+					id:link._id,
 					title: link.title ? link.title : "",
 					paragraph: link.paragraph  ? link.paragraph : "",
 					outgoingLinks: link.outgoingLinks ? link.outgoingLinks : []
 				};
-				// console.log(link.title);
 				index.addDoc(doc);
 			}
-			// console.log("hey");
 		});
-		// console.log(index);
-		// index.search("kiwi");
+		index.search("kiwi", {});
 
 		const ALPHA = 0.1;
 		const EUC_STOPPING_THRESHOLD = 0.0001;
