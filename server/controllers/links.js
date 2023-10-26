@@ -44,25 +44,27 @@ export const search = async (req, res) => {
         },
       });
       // console.log(searchResults);
-      links = searchResults.map(async (result) => {
-        // const id = index.documentStore.getDoc(result.ref);
-        let link = await LinkModel.findById(result.ref);
-        console.log(link);
-        let doc = {
-          paragraph: link.paragraph,
-          title: link.title,
-          url: link.link,
-          score: result.score,
-          incomingLinks: link.incomingLinks,
-          outgoingLinks: link.outgoingLinks,
-          wordFrequencies: [...link.wordFrequencies]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10),
-          pageRank: link.pageRank,
-        };
-        // console.log(doc);
-        return doc;
-      });
+      links = await Promise.all(
+        searchResults.map(async (result) => {
+          // const id = index.documentStore.getDoc(result.ref);
+          let link = await LinkModel.findById(result.ref);
+          console.log(link);
+          let doc = {
+            paragraph: link.paragraph,
+            title: link.title,
+            url: link.link,
+            score: result.score,
+            incomingLinks: link.incomingLinks,
+            outgoingLinks: link.outgoingLinks,
+            wordFrequencies: [...link.wordFrequencies]
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 10),
+            pageRank: link.pageRank,
+          };
+          // console.log(doc);
+          return doc;
+        })
+      );
       // links = links;
       // console.log(links);
       // .sort((a, b) =>
