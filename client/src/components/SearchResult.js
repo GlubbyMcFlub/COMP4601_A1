@@ -13,16 +13,25 @@ const SearchResult = ({
 	return (
 		<div className="search-result">
 			<h2>{title}</h2>
-			{
-				<a href={url} target="_blank" rel="noopener noreferrer">
-					<h4>{url}</h4>
-				</a>
-			}
-			<p>{paragraph}</p>
-			<p>Score = {score}</p>
-			<p>PageRank = {pageRank}</p>
+			<a href={url} target="_blank" rel="noopener noreferrer">
+				<h4>{url}</h4>
+			</a>
+			<div>
+				<h4>Content</h4>
+				<p>{paragraph}</p>
+			</div>
+			<div>
+				<h4>Score</h4>
+				<p>{score}</p>
+			</div>
+			<div>
+				<h4>PageRank</h4>
+				<p>{pageRank}</p>
+			</div>
 			<WordFrequencies wordFrequencies={wordFrequencies} />
-			<footer>Result #: {result}</footer>
+			<div>
+				<h4>Result #{result}</h4>
+			</div>
 		</div>
 	);
 };

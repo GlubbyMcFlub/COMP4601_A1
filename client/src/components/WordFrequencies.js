@@ -5,13 +5,11 @@ const WordFrequencies = ({ wordFrequencies }) => {
 		return null;
 	}
 
-	const wordFrequencyItems = Object.entries(wordFrequencies).map(
-		([word, frequency]) => (
-			<button className="word-button" key={word}>
-				{word}: {frequency}
-			</button>
-		)
-	);
+	const wordFrequencyItems = wordFrequencies.map(([word, frequency], index) => (
+		<button className="word-button" key={index}>
+			{word}: {frequency}
+		</button>
+	));
 
 	return (
 		<div className="word-frequencies">

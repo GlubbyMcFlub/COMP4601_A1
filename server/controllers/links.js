@@ -59,6 +59,7 @@ export const search = async (req, res) => {
 							.slice(0, 10),
 						pageRank: link.pageRank,
 					};
+					console.log(doc);
 					return doc;
 				})
 			);
