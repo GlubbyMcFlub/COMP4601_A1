@@ -1,7 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import SearchPage from "./pages/SearchPage.js";
+import { BrowserRouter as Router } from "react-router-dom";
+import SearchPage from "./pages/SearchPage";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
-root.render(<SearchPage></SearchPage>);
+root.render(
+	<React.StrictMode>
+		<Router>
+			<SearchPage />
+		</Router>
+	</React.StrictMode>
+);
