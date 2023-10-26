@@ -1,7 +1,12 @@
 import express from "express";
 
 // controllers
-import { search, updateLink } from "../controllers/links.js";
+import {
+  search,
+  updateLink,
+  calculatePageRank,
+  indexLinks,
+} from "../controllers/links.js";
 
 const router = express.Router();
 
@@ -9,6 +14,9 @@ const router = express.Router();
 router.get("/", search);
 
 // router.post("/", createLink);
-router.post("/", updateLink);
+router.put("/", updateLink);
+
+router.patch("/pageRank", calculatePageRank);
+router.patch("/score", indexLinks);
 
 export default router;
