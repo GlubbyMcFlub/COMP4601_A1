@@ -23,12 +23,16 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 
 	const handleSearch = async () => {
 		try {
-			setIsLoading(true); // Set loading state to true while waiting for the response
-			const response = await fetch(
-				`/${isPersonal ? "personal" : "fruits"}/?q=${encodeURIComponent(
-					query.toLowerCase()
-				)}&limit=${maxResults}&boost=${isBoosted}`
-			);
+			setIsLoading(true);
+			let apiUrl = `/${
+				isPersonal ? "personal" : "fruits"
+			}/?limit=${maxResults}&boost=${isBoosted}`;
+			if (query.trim() !== "") {
+				apiUrl += `&q=${encodeURIComponent(query.toLowerCase())}`;
+			}
+
+			console.log(apiUrl);
+			const response = await fetch(apiUrl);
 			const data = await response.json();
 			onSearchResults(data);
 			setSearchResults(data);
@@ -36,7 +40,7 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 		} catch (error) {
 			console.error("Error:", error);
 		} finally {
-			setIsLoading(false); // Reset loading state when the response is received
+			setIsLoading(false);
 		}
 	};
 
