@@ -65,10 +65,7 @@ export const search = async (req, res, type) => {
 			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
 
 			links = searchResults.map((result) => {
-				console.log(result.ref);
-				const foundLink = dbLinks.find(
-					(link) => link._id.toString() === result.ref
-				);
+				const foundLink = dbLinks.find((link) => link._id.equals(result.ref));
 				if (!foundLink) {
 					console.error("link not found for some reason");
 					return {
