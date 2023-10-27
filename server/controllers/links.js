@@ -31,14 +31,12 @@ export const search = async (req, res) => {
 				paragraph: foundLink.paragraph,
 				title: foundLink.title,
 				url: foundLink.link,
-				score: foundLink.score, //broken
 				incomingLinks: foundLink.incomingLinks,
 				outgoingLinks: foundLink.outgoingLinks,
 				wordFrequencies: [...foundLink.wordFrequencies]
 					.sort((a, b) => b[1] - a[1])
 					.slice(0, 10),
 				pr: foundLink.pageRank,
-				finalScore: foundLink.pr * foundLink.score, //broken
 			};
 
 			console.log(doc);
@@ -56,7 +54,6 @@ export const search = async (req, res) => {
 			links = await Promise.all(
 				searchResults.map(async (result) => {
 					let link = await LinkModel.findById(result.ref);
-					// console.log(link);
 					let doc = {
 						id: result.ref,
 						name: "Eric Leroux and David Addison",
@@ -69,11 +66,13 @@ export const search = async (req, res) => {
 				})
 			);
 
-			links = links
-				.sort((a, b) =>
-					boost ? b.finalScore - a.finalScore : b.score - a.score
-				)
-				.slice(0, limit);
+			if (!boost) {
+				links = links.sort((a, b) => b.score - a.score);
+			} else {
+				links = links.sort((a, b) => b.score * b.pr - a.score * a.pr);
+			}
+
+			links = links.slice(0, limit);
 
 			return res.status(200).json(links);
 		} else {

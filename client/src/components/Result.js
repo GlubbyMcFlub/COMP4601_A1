@@ -39,16 +39,8 @@ function Result() {
 					</a>
 				</div>
 				<div>
-					<h4>Score</h4>
-					<p>{resultData.score}</p>
-				</div>
-				<div>
 					<h4>PageRank</h4>
 					<p>{resultData.pr}</p>
-				</div>
-				<div>
-					<h4>Final Score</h4>
-					<p>{resultData.finalScore}</p>
 				</div>
 				<WordFrequencies wordFrequencies={resultData.wordFrequencies} />
 				<div>
