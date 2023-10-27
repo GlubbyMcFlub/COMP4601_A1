@@ -116,9 +116,11 @@ export const search = async (req, res, type) => {
 			links = await selectedSchema.find().limit(limit);
 			links = links.map((link) => ({
 				id: link._id,
+				name: "Eric Leroux and David Addison",
 				title: link.title,
-				paragraph: link.paragraph,
-				outgoingLinks: link.outgoingLinks,
+				url: link.link,
+				score: 0,
+				pr: link.pageRank,
 			}));
 		}
 
