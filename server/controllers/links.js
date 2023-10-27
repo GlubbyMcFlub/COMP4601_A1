@@ -82,6 +82,25 @@ export const search = async (req, res) => {
 			}
 
 			links = links.slice(0, limit);
+			let linksToAdd = await LinkModel.find();
+
+			//add any other links with score of 0 if limit is not yet reached
+			for (const linkToAdd of linksToAdd) {
+				if (links.length == limit) {
+					break;
+				}
+				if (!links.some((link) => link.id == linkToAdd._id)) {
+					let doc = {
+						id: linkToAdd._id,
+						name: "Eric Leroux and David Addison",
+						title: linkToAdd.title,
+						url: linkToAdd.link,
+						score: 0,
+						pr: linkToAdd.pageRank,
+					};
+					links.push(doc);
+				}
+			}
 		} else {
 			links = await LinkModel.find().limit(limit);
 			links = links.map((link) => ({
