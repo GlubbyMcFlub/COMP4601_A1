@@ -14,7 +14,7 @@ const index = elasticlunr(function () {
 export const search = async (req, res) => {
 	try {
 		const { id, q, boost, limit } = req.query;
-
+		const applyBoost = boost === "true";
 		let links;
 
 		if (id) {
@@ -66,10 +66,14 @@ export const search = async (req, res) => {
 				})
 			);
 
-			if (!boost) {
-				links = links.sort((a, b) => b.score - a.score);
+			if (!applyBoost) {
+				links = links.sort((a, b) => {
+					return b.score - a.score;
+				});
 			} else {
-				links = links.sort((a, b) => b.score * b.pr - a.score * a.pr);
+				links = links.sort((a, b) => {
+					return b.score * b.pr - a.score * a.pr;
+				});
 			}
 
 			links = links.slice(0, limit);
