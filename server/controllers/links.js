@@ -61,32 +61,30 @@ export const search = async (req, res, type) => {
 				},
 			});
 
-			const linkIds = searchResults.map((result) => result.ref);
-			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
-
-			links = searchResults.map((result) => {
-				const foundLink = dbLinks.find((link) => link._id.equals(result.ref));
-				if (!foundLink) {
-					console.error("link not found for some reason");
+			links = await Promise.all(
+				searchResults.map(async (result) => {
+					const foundLink = await selectedSchema.findById(result.ref);
+					if (!foundLink) {
+						console.error("link not found for some reason");
+						return {
+							id: "",
+							name: "Eric Leroux and David Addison",
+							title: "",
+							url: "",
+							score: 0,
+							pr: 0,
+						};
+					}
 					return {
-						id: "",
+						id: result.ref ? result.ref : "",
 						name: "Eric Leroux and David Addison",
-						title: "",
-						url: "",
-						score: 0,
-						pr: 0,
+						title: foundLink.title ? foundLink.title : "",
+						url: foundLink.link ? foundLink.link : "",
+						score: result.score ? result.score : 0,
+						pr: foundLink.pageRank ? foundLink.pageRank : 0,
 					};
-				}
-				return {
-					id: result.ref ? result.ref : "",
-					name: "Eric Leroux and David Addison",
-					title: foundLink.title ? foundLink.title : "",
-					url: foundLink.link ? foundLink.link : "",
-					score: result.score ? result.score : 0,
-					pr: foundLink.pageRank ? foundLink.pageRank : 0,
-				};
-			});
-
+				})
+			);
 			if (!applyBoost) {
 				links.sort((a, b) => b.score - a.score);
 			} else {
@@ -94,14 +92,15 @@ export const search = async (req, res, type) => {
 			}
 
 			links = links.slice(0, limit);
-			let linksToAdd = await selectedSchema.find();
+			let linksToAdd = await selectedSchema.find().limit(limit);
 
 			//add any other links with score of 0 if limit is not yet reached
 			for (const linkToAdd of linksToAdd) {
 				if (links.length == limit) {
 					break;
 				}
-				if (!links.some((link) => link.id == linkToAdd._id)) {
+
+				if (!links.some((link) => link.id == linkToAdd._id.toString())) {
 					let doc = {
 						id: linkToAdd._id,
 						name: "Eric Leroux and David Addison",
