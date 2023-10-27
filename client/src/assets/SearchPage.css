@@ -49,34 +49,72 @@ body {
 
 .search-results {
 	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-around;
+	flex-direction: column;
+	align-items: center;
 	margin-top: 20px;
-	align-items: flex-start; /* Align items to the top */
 }
 
 .search-result {
-	background-color: var(--secondary-bg);
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 20px;
+	padding: 20px;
 	border: 1px solid var(--accent-color);
-	color: var(--primary-text);
 	border-radius: 5px;
 	box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
-	margin: 10px;
-	padding: 20px;
-	width: 300px;
-	text-align: left;
 	overflow: hidden;
 	transition: box-shadow 0.3s;
 }
 
-.search-result:hover {
-	box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.2); /* Apply a box shadow on hover */
-	cursor: pointer; /* Change cursor to pointer on hover to indicate clickability */
+.result-header {
+	display: flex;
+	align-items: center;
+	margin-bottom: 10px;
 }
 
-.SearchPage {
-	text-align: center;
-	padding-top: 100px;
+.result-number {
+	flex: 0 0 50px;
+	height: 50px;
+	border-radius: 50%;
+	background-color: var(--accent-color);
+	color: var(--primary-text);
+	font-size: 18px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-right: 20px;
+}
+
+.result-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.result-link {
+	font-size: 14px;
+	color: var(--accent-color);
+	text-decoration: none;
+}
+
+.result-content {
+	display: flex;
+	flex-direction: column;
+}
+
+.result-details {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+
+.result-detail {
+	margin-right: 20px;
+}
+
+.search-result:hover {
+	box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.2);
+	cursor: pointer;
 }
 
 .SearchPage h1 {
@@ -91,6 +129,7 @@ body {
 input {
 	margin: 2px;
 }
+
 input[type="text"] {
 	padding: 10px;
 	font-size: 16px;
@@ -120,7 +159,6 @@ button {
 	margin-top: 20px;
 }
 
-/* Add this to your existing CSS or create a new CSS file */
 .hidden {
 	display: none;
 }
@@ -144,7 +182,7 @@ button {
 	margin: 10px;
 	padding: 20px;
 	word-wrap: break-word;
-	height: 300px;
+	height: 100px;
 }
 
 .search-result h2 {
@@ -171,8 +209,8 @@ h4 {
 }
 
 .search-result a {
-	max-width: 100%; /* Ensure the URL does not overflow its container */
-	overflow: hidden; /* Hide any overflowing content */
+	max-width: 100%;
+	overflow: hidden;
 }
 
 label {
@@ -189,7 +227,7 @@ input[type="checkbox"] {
 	font-size: 16px;
 	border: 1px solid #ccc;
 	border-radius: 5px;
-	width: 60px; /* Adjust width as needed */
+	width: 60px;
 }
 
 input[type="checkbox"] {
@@ -229,5 +267,24 @@ input[type="checkbox"]:focus {
 }
 
 .word-button:hover {
-	background-color: #0056b3; /* Darken the background color on hover */
+	background-color: #0056b3;
+}
+
+.loading-icon {
+	border: 4px solid rgba(0, 0, 0, 0.2);
+	border-top: 4px solid #3498db;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	animation: spin 1s linear infinite;
+	margin: 20px auto;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
 }

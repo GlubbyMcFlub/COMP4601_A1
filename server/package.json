@@ -20,6 +20,7 @@
 		"ml-matrix": "^6.10.7",
 		"mongodb": "^6.2.0",
 		"mongoose": "^7.6.3",
+		"node-cache": "^5.1.2",
 		"nodemon": "^3.0.1"
 	}
 }

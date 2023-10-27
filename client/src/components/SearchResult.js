@@ -1,11 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "../assets/SearchPage.css";
 import WordFrequencies from "./WordFrequencies.js";
 
 const SearchResult = ({
 	id,
 	title,
-	paragraph,
 	result,
 	score,
 	url,
@@ -14,25 +14,27 @@ const SearchResult = ({
 }) => {
 	return (
 		<div className="search-result">
-			<div>
-				<h2>{title}</h2>
+			<div className="result-header">
+				<div className="result-number">{result}</div>
+				<div className="result-info">
+					<h2>{title}</h2>
+					<Link to={`/result/${id}`} className="result-link">
+						{url}
+					</Link>
+				</div>
 			</div>
-			<div>
-				<Link to={`/result/${id}`} className="result-link">
-					{url}
-				</Link>
-			</div>
-			<div>
-				<h4>Score</h4>
-				<p>{score}</p>
-			</div>
-			<div>
-				<h4>PageRank</h4>
-				<p>{pageRank}</p>
-			</div>
-			<WordFrequencies wordFrequencies={wordFrequencies} />
-			<div>
-				<h4>Result #{result}</h4>
+			<div className="result-content">
+				<div className="result-details">
+					<div className="result-detail">
+						<h4>Score:</h4>
+						<p>{score}</p>
+					</div>
+					<div className="result-detail">
+						<h4>PageRank:</h4>
+						<p>{pageRank}</p>
+					</div>
+				</div>
+				<WordFrequencies wordFrequencies={wordFrequencies} />
 			</div>
 		</div>
 	);

@@ -1,6 +1,7 @@
 import elasticlunr from "elasticlunr";
 import { Matrix } from "ml-matrix";
 import mongoose from "mongoose";
+import NodeCache from "node-cache";
 import LinkModel from "../models/linkModel.js";
 
 // Initialize ElasticLunr index
@@ -8,14 +9,23 @@ const index = elasticlunr(function () {
 	this.addField("title");
 	this.addField("paragraph");
 	this.addField("outgoingLinks");
+	this.addField("wordFrequencies");
 	this.setRef("id");
 });
+
+const cache = new NodeCache({ stdTTL: 60 });
 
 export const search = async (req, res) => {
 	try {
 		const { id, q, boost, limit } = req.query;
 		const applyBoost = boost === "true";
+		const cacheKey = `search:${q}:${applyBoost}:${limit}`;
 		let links;
+
+		const cachedResult = cache.get(cacheKey);
+		if (cachedResult) {
+			return res.status(200).json(cachedResult);
+		}
 
 		if (id) {
 			if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -25,8 +35,8 @@ export const search = async (req, res) => {
 			if (!foundLink) {
 				return res.status(404).json({ message: "Link not found" });
 			}
-			console.log(foundLink);
-			let doc = {
+			links = {
+				id: foundLink._id,
 				name: "Eric Leroux and David Addison",
 				paragraph: foundLink.paragraph,
 				title: foundLink.title,
@@ -38,67 +48,54 @@ export const search = async (req, res) => {
 					.slice(0, 10),
 				pr: foundLink.pageRank,
 			};
-
-			console.log(doc);
-
-			return res.status(200).json(doc);
 		} else if (q) {
 			const searchResults = index.search(q, {
 				fields: {
 					paragraph: { boost: 3 },
 					title: { boost: 2 },
 					outgoingLinks: { boost: 1 },
+					wordFrequencies: { boost: 4 },
 				},
 			});
 
-			links = await Promise.all(
-				searchResults.map(async (result) => {
-					let link = await LinkModel.findById(result.ref);
-					let doc = {
-						id: result.ref,
-						name: "Eric Leroux and David Addison",
-						title: link.title,
-						url: link.link,
-						score: result.score,
-						pr: link.pageRank,
-					};
-					return doc;
-				})
-			);
+			const linkIds = searchResults.map((result) => result.ref);
+			const dbLinks = await LinkModel.find({ _id: { $in: linkIds } });
+
+			links = searchResults.map((result) => {
+				const foundLink = dbLinks.find(
+					(link) => link._id.toString() === result.ref
+				);
+				return {
+					id: result.ref ? result.ref : "",
+					name: "Eric Leroux and David Addison",
+					title: foundLink.title ? foundLink.title : "",
+					url: foundLink.link ? foundLink.link : "",
+					score: result.score ? result.score : 0,
+					pr: foundLink.pageRank ? foundLink.pageRank : 0,
+				};
+			});
 
 			if (!applyBoost) {
-				links = links.sort((a, b) => {
-					return b.score - a.score;
-				});
+				links.sort((a, b) => b.score - a.score);
 			} else {
-				links = links.sort((a, b) => {
-					return b.score * b.pr - a.score * a.pr;
-				});
+				links.sort((a, b) => b.score * b.pr - a.score * a.pr);
 			}
 
 			links = links.slice(0, limit);
-
-			return res.status(200).json(links);
 		} else {
-			links = LinkModel.find().slice(0, limit);
-			return res.status(200).json(links);
+			links = await LinkModel.find().limit(limit);
+			links = links.map((link) => ({
+				id: link._id,
+				title: link.title,
+				paragraph: link.paragraph,
+				outgoingLinks: link.outgoingLinks,
+			}));
 		}
+
+		cache.set(cacheKey, links, 60);
+		res.status(200).json(links);
 	} catch (err) {
 		res.status(400).json({ message: err.message });
-	}
-};
-
-export const getPopular = async (req, res) => {
-	try {
-		const links = await LinkModel.aggregate([
-			{ $addFields: { numIncomingLinks: { $size: "$incomingLinks" } } },
-			{ $sort: { numIncomingLinks: -1 } },
-			{ $limit: 10 },
-		]);
-
-		res.status(200).json(links);
-	} catch (error) {
-		res.status(500).json({ message: error.message });
 	}
 };
 
@@ -237,59 +234,5 @@ export const indexLinks = async (req, res) => {
 		res.status(200).json({});
 	} catch (error) {
 		res.status(400).json({ message: error.message });
-	}
-};
-
-export const searchLinks = async (req, res) => {
-	const { query } = req.query;
-
-	try {
-		const searchResults = index
-			.search(query, {
-				fields: {
-					paragraph: { boost: 3 },
-					title: { boost: 2 },
-					outgoingLinks: { boost: 1 },
-				},
-			})
-			.slice(0, 10);
-
-		const links = searchResults.map(function (result) {
-			const link = index.documentStore.getDoc(result.ref);
-			return {
-				paragraph: link.paragraph,
-				title: link.title,
-				url: link.link,
-				score: result.score,
-			};
-		});
-
-		res.status(200).json(links);
-		// need to support for postman the following:
-		// name, url, score, title, pr
-	} catch (error) {
-		res.status(500).json({ message: error.message });
-	}
-};
-
-// Alternative to running the crawler every time the server starts
-export const populateIndex = async (req, res) => {
-	try {
-		const linkModels = await LinkModel.find();
-
-		linkModels.forEach((linkModel) => {
-			const doc = {
-				id: linkModel.id,
-				title: linkModel.title,
-				paragraph: linkModel.paragraph,
-				outgoingLinks: linkModel.outgoingLinks.join(" "), // Join outgoingLinks as a string
-			};
-
-			index.addDoc(doc);
-		});
-
-		res.status(200).json({ message: "Index populated" });
-	} catch (error) {
-		res.status(500).json({ message: error.message });
 	}
 };

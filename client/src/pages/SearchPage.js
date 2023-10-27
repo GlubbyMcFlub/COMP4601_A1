@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import "../assets/SearchPage.css";
+import LoadingIcon from "../components/LoadingIcon"; // Import your loading icon component
 import Result from "../components/Result";
 import SearchResult from "../components/SearchResult.js";
 
@@ -8,12 +9,11 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 	const [query, setQuery] = useState("");
 	const [maxResults, setMaxResults] = useState(10);
 	const [isBoosted, setIsBoosted] = useState(false);
-	const navigate = useNavigate();
 	const [hasSearched, setHasSearched] = useState(false);
 	const [selectedResult, setSelectedResult] = useState(null);
 	const [searchResults, setSearchResults] = useState([]);
-
-	let endpoint = "/fruits/";
+	const [isLoading, setIsLoading] = useState(false); // Loading state
+	const navigate = useNavigate();
 
 	const handleResultClick = (id) => {
 		navigate(`/result/${id}`);
@@ -22,28 +22,31 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 
 	const handleSearch = async () => {
 		try {
+			setIsLoading(true); // Set loading state to true while waiting for the response
 			const response = await fetch(
-				`${endpoint}?q=${encodeURIComponent(
+				`/fruits/?q=${encodeURIComponent(
 					query.toLowerCase()
 				)}&limit=${maxResults}&boost=${isBoosted}`
 			);
 			const data = await response.json();
-			onSearchResults(data); // Update search results in the parent component
+			onSearchResults(data);
 			setSearchResults(data);
 			setHasSearched(true);
 		} catch (error) {
 			console.error("Error:", error);
+		} finally {
+			setIsLoading(false); // Reset loading state when the response is received
 		}
+	};
+
+	const handleThemeChange = () => {
+		onDarkMode();
 	};
 
 	const handleKeyDown = (e) => {
 		if (e.key === "Enter") {
 			handleSearch();
 		}
-	};
-
-	const handleThemeChange = () => {
-		onDarkMode();
 	};
 
 	return (
@@ -77,7 +80,8 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 					/>
 				</label>
 			</div>
-			{hasSearched && !selectedResult && (
+			{isLoading && <LoadingIcon className="loading-icon" />}
+			{hasSearched && !selectedResult && !isLoading && (
 				<div className="search-results">
 					{searchResults.length > 0 ? (
 						searchResults.map((result, index) => (
@@ -98,7 +102,7 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 							</div>
 						))
 					) : (
-						<p className="error-message">No search results found.</p>
+						<p className="error-message">No search results found.</p> // TODO: As per A1 specs, this will never actually appear (we return random data if no results are found)
 					)}
 				</div>
 			)}
