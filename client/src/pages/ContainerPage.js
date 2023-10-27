@@ -8,8 +8,13 @@ function ContainerPage() {
 	const [darkMode, setDarkMode] = useState(
 		window.matchMedia("(prefers-color-scheme: dark)").matches
 	);
+	const [database, setDatabase] = useState("fruits");
+
 	const handleSearchResults = (results) => {
 		setSearchResults(results);
+	};
+	const handleDatabase = (db) => {
+		setDatabase(db);
 	};
 
 	const toggleDarkMode = () => {
@@ -32,13 +37,11 @@ function ContainerPage() {
 						<SearchPage
 							onDarkMode={toggleDarkMode}
 							onSearchResults={handleSearchResults}
+							onChangeDatabase={handleDatabase}
 						/>
 					}
 				/>
-				<Route
-					path="/result/:id"
-					element={<Result searchResults={searchResults} />}
-				/>
+				<Route path="/result/:id" element={<Result database={database} />} />
 			</Routes>
 		</Router>
 	);

@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import LoadingIcon from "./LoadingIcon"; // Import your loading icon component
 import WordFrequencies from "./WordFrequencies";
 
-function Result() {
+function Result({ database }) {
 	const { id } = useParams();
 	const [resultData, setResultData] = useState({});
 	const [isLoading, setIsLoading] = useState(true); // Loading state
@@ -12,19 +12,19 @@ function Result() {
 		const fetchResultData = async () => {
 			try {
 				const response = await fetch(
-					`/fruits/?id=${encodeURIComponent(id.toLowerCase())}`
+					`/${database}/?id=${encodeURIComponent(id.toLowerCase())}`
 				);
 				const data = await response.json();
 				setResultData(data);
 			} catch (error) {
 				console.error("Error fetching result data:", error);
 			} finally {
-				setIsLoading(false); // Set loading state to false when the data is received
+				setIsLoading(false);
 			}
 		};
 
 		fetchResultData();
-	}, [id]);
+	}, [id, database]);
 
 	return (
 		<div className="result-container">

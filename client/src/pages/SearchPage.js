@@ -5,7 +5,7 @@ import LoadingIcon from "../components/LoadingIcon"; // Import your loading icon
 import Result from "../components/Result";
 import SearchResult from "../components/SearchResult.js";
 
-function SearchPage({ onDarkMode, onSearchResults }) {
+function SearchPage({ onDarkMode, onSearchResults, onChangeDatabase }) {
 	const [query, setQuery] = useState("");
 	const [maxResults, setMaxResults] = useState(10);
 	const [isBoosted, setIsBoosted] = useState(false);
@@ -19,6 +19,7 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 	const handleResultClick = (id) => {
 		navigate(`/result/${id}`);
 		setSelectedResult(id);
+		onChangeDatabase(isPersonal ? "personal" : "fruits");
 	};
 
 	const handleSearch = async () => {
