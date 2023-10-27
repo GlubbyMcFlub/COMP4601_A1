@@ -27,7 +27,7 @@ function Result() {
 	}, [id]);
 
 	return (
-		<div>
+		<div className="result-container">
 			<div>
 				<Link to="/">Back to Search Results</Link>
 			</div>

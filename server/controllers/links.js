@@ -15,12 +15,15 @@ const index = elasticlunr(function () {
 
 const cache = new NodeCache({ stdTTL: 60 });
 
-export const search = async (req, res) => {
+export const search = async (req, res, type) => {
 	try {
 		const { id, q, boost, limit } = req.query;
 		const applyBoost = boost === "true";
 		const cacheKey = `search:${q}:${applyBoost}:${limit}`;
 		let links;
+		let selectedSchema;
+		if (type === "fruits") selectedSchema = LinkModel;
+		else if (type === "personal") selectedSchema = LinkModel;
 
 		const cachedResult = cache.get(cacheKey);
 		if (cachedResult) {
@@ -31,7 +34,7 @@ export const search = async (req, res) => {
 			if (!mongoose.Types.ObjectId.isValid(id)) {
 				return res.status(400).json({ message: "Invalid link ID" });
 			}
-			const foundLink = await LinkModel.findById(id);
+			const foundLink = await selectedSchema.findById(id);
 			if (!foundLink) {
 				return res.status(404).json({ message: "Link not found" });
 			}
@@ -59,7 +62,7 @@ export const search = async (req, res) => {
 			});
 
 			const linkIds = searchResults.map((result) => result.ref);
-			const dbLinks = await LinkModel.find({ _id: { $in: linkIds } });
+			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
 
 			links = searchResults.map((result) => {
 				const foundLink = dbLinks.find(
@@ -93,7 +96,7 @@ export const search = async (req, res) => {
 			}
 
 			links = links.slice(0, limit);
-			let linksToAdd = await LinkModel.find();
+			let linksToAdd = await selectedSchema.find();
 
 			//add any other links with score of 0 if limit is not yet reached
 			for (const linkToAdd of linksToAdd) {
@@ -113,7 +116,7 @@ export const search = async (req, res) => {
 				}
 			}
 		} else {
-			links = await LinkModel.find().limit(limit);
+			links = await selectedSchema.find().limit(limit);
 			links = links.map((link) => ({
 				id: link._id,
 				title: link.title,
@@ -129,23 +132,26 @@ export const search = async (req, res) => {
 	}
 };
 
-export const updateLink = async (req, res) => {
+export const updateLink = async (req, res, type) => {
 	const { link, update } = req.body;
 	const query = { link: link };
+	let selectedSchema;
+	if (type === "fruits") selectedSchema = LinkModel;
+	else if (type === "personal") selectedSchema = LinkModel;
 
 	try {
 		//if incoming link already exists then make sure we don't push it again
 		//usually happens when crawler is ran twice without clearing database
 		if ("$push" in update) {
-			const exists = await LinkModel.exists({ link: link });
+			const exists = await selectedSchema.exists({ link: link });
 			if (exists) {
-				const foundLink = await LinkModel.findOne({ link: link });
+				const foundLink = await selectedSchema.findOne({ link: link });
 				if (foundLink.incomingLinks.includes(update.$push.incomingLinks)) {
 					return res.status(201).json({});
 				}
 			}
 		}
-		const newLink = await LinkModel.findOneAndUpdate(query, update, {
+		const newLink = await selectedSchema.findOneAndUpdate(query, update, {
 			upsert: true,
 			new: true,
 			includeResultMetadata: true,

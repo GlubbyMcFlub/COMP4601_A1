@@ -2,19 +2,32 @@ import express from "express";
 
 // controllers
 import {
-  search,
-  updateLink,
-  calculatePageRank,
-  indexLinks,
+	calculatePageRank,
+	indexLinks,
+	search,
+	updateLink,
 } from "../controllers/links.js";
 
 const router = express.Router();
 
 // support functionality for personal and fruit
-router.get("/", search);
+router.get("/", (req, res) => {
+	search(req, res, "fruits");
+});
 
-// router.post("/", createLink);
-router.put("/", updateLink);
+// For /personal route
+router.get("/", (req, res) => {
+	search(req, res, "personal");
+});
+
+router.put("/", (req, res) => {
+	updateLink(req, res, "fruits");
+});
+
+// For /personal route
+router.put("/", (req, res) => {
+	updateLink(req, res, "personal");
+});
 
 router.patch("/pageRank", calculatePageRank);
 router.patch("/score", indexLinks);

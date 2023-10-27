@@ -62,23 +62,25 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 				/>
 				<button onClick={handleSearch}>Search</button>
 				<button onClick={handleThemeChange}>Change Theme</button>
-				<label>
-					Max Results:
-					<input
-						type="number"
-						value={maxResults}
-						onChange={(e) => setMaxResults(e.target.value)}
-						min="1"
-					/>
-				</label>
-				<label>
-					Boost Results:
-					<input
-						type="checkbox"
-						checked={isBoosted}
-						onChange={() => setIsBoosted(!isBoosted)}
-					/>
-				</label>
+				<div className="filter-container">
+					<label>
+						Max Results:
+						<input
+							type="number"
+							value={maxResults}
+							onChange={(e) => setMaxResults(e.target.value)}
+							min="1"
+						/>
+					</label>
+					<label>
+						Boost Results:
+						<input
+							type="checkbox"
+							checked={isBoosted}
+							onChange={() => setIsBoosted(!isBoosted)}
+						/>
+					</label>
+				</div>
 			</div>
 			{isLoading && <LoadingIcon className="loading-icon" />}
 			{hasSearched && !selectedResult && !isLoading && (
