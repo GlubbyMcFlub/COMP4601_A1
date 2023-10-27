@@ -2,7 +2,7 @@ import elasticlunr from "elasticlunr";
 import { Matrix } from "ml-matrix";
 import mongoose from "mongoose";
 import NodeCache from "node-cache";
-import LinkModel from "../models/linkModel.js";
+import { FruitModel, PersonalModel } from "../models/linkModel.js";
 
 // Initialize ElasticLunr index
 const index = elasticlunr(function () {
@@ -19,11 +19,11 @@ export const search = async (req, res, type) => {
 	try {
 		const { id, q, boost, limit } = req.query;
 		const applyBoost = boost === "true";
-		const cacheKey = `search:${q}:${applyBoost}:${limit}`;
+		const cacheKey = `search:${q}:${applyBoost}:${limit}:${type}`;
 		let links;
 		let selectedSchema;
-		if (type === "fruits") selectedSchema = LinkModel;
-		else if (type === "personal") selectedSchema = LinkModel;
+		if (type === "fruits") selectedSchema = FruitModel;
+		else if (type === "personal") selectedSchema = PersonalModel;
 
 		const cachedResult = cache.get(cacheKey);
 		if (cachedResult) {
@@ -65,6 +65,7 @@ export const search = async (req, res, type) => {
 			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
 
 			links = searchResults.map((result) => {
+				console.log(result.ref);
 				const foundLink = dbLinks.find(
 					(link) => link._id.toString() === result.ref
 				);
@@ -133,13 +134,12 @@ export const search = async (req, res, type) => {
 };
 
 export const updateLink = async (req, res, type) => {
-	const { link, update } = req.body;
-	const query = { link: link };
-	let selectedSchema;
-	if (type === "fruits") selectedSchema = LinkModel;
-	else if (type === "personal") selectedSchema = LinkModel;
-
 	try {
+		const { link, update } = req.body;
+		const query = { link: link };
+		let selectedSchema;
+		if (type === "fruits") selectedSchema = FruitModel;
+		else if (type === "personal") selectedSchema = PersonalModel;
 		//if incoming link already exists then make sure we don't push it again
 		//usually happens when crawler is ran twice without clearing database
 		if ("$push" in update) {
@@ -166,9 +166,12 @@ export const updateLink = async (req, res, type) => {
 	}
 };
 
-export const calculatePageRank = async (req, res) => {
+export const calculatePageRank = async (req, res, type) => {
 	try {
-		let links = await LinkModel.find();
+		let selectedSchema;
+		if (type === "fruits") selectedSchema = FruitModel;
+		else if (type === "personal") selectedSchema = PersonalModel;
+		let links = await selectedSchema.find();
 		if (!links) {
 			console.error("no links found");
 		}
@@ -249,9 +252,12 @@ export const calculatePageRank = async (req, res) => {
 	}
 };
 
-export const indexLinks = async (req, res) => {
+export const indexLinks = async (req, res, type) => {
+	let selectedSchema;
+	if (type === "fruits") selectedSchema = FruitModel;
+	else if (type === "personal") selectedSchema = PersonalModel;
 	try {
-		let links = await LinkModel.find();
+		let links = await selectedSchema.find();
 		if (!links) {
 			console.error("no links found");
 		}

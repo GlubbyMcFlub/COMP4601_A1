@@ -1,12 +1,20 @@
 import Crawler from "crawler";
 import fetch from "node-fetch";
 
-const baseEndPoint = "http://localhost:5000/fruits/";
+const baseEndPoint = "http://localhost:5000/personal/";
 
 const startTime = new Date();
 
 const c = new Crawler({
 	maxConnections: 1,
+	preRequest: function (options, done) {
+		// Check if the URL ends with ".html" indicating an HTML page
+		if (options.uri.endsWith(".html")) {
+			done(); // Continue processing the URL
+		} else {
+			done(null, false); // Skip processing non-HTML URLs
+		}
+	},
 	callback: async function (error, res, done) {
 		if (error) {
 			console.error(error);
@@ -105,8 +113,8 @@ const c = new Crawler({
 	},
 });
 
-//c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+//c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 
 c.on("drain", async function () {
 	try {

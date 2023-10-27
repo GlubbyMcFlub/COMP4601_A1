@@ -10,26 +10,40 @@ import {
 
 const router = express.Router();
 
-// support functionality for personal and fruit
-router.get("/", (req, res) => {
+// SEARCH
+router.get("/fruits", (req, res) => {
 	search(req, res, "fruits");
 });
 
-// For /personal route
-router.get("/", (req, res) => {
+router.get("/personal", (req, res) => {
 	search(req, res, "personal");
 });
 
-router.put("/", (req, res) => {
+// UPDATE
+router.put("/fruits", (req, res) => {
 	updateLink(req, res, "fruits");
 });
 
-// For /personal route
-router.put("/", (req, res) => {
+router.put("/personal", (req, res) => {
 	updateLink(req, res, "personal");
 });
 
-router.patch("/pageRank", calculatePageRank);
-router.patch("/score", indexLinks);
+// PAGERANK
+router.patch("/fruits/pageRank", (req, res) => {
+	calculatePageRank(req, res, "fruits");
+});
+
+router.patch("/personal/pageRank", (req, res) => {
+	calculatePageRank(req, res, "personal");
+});
+
+// SCORE
+router.patch("/fruits/score", (req, res) => {
+	indexLinks(req, res, "fruits");
+});
+
+router.patch("/personal/score", (req, res) => {
+	indexLinks(req, res, "personal");
+});
 
 export default router;

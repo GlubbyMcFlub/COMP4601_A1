@@ -9,10 +9,11 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 	const [query, setQuery] = useState("");
 	const [maxResults, setMaxResults] = useState(10);
 	const [isBoosted, setIsBoosted] = useState(false);
+	const [isPersonal, setIsPersonal] = useState(false);
 	const [hasSearched, setHasSearched] = useState(false);
 	const [selectedResult, setSelectedResult] = useState(null);
 	const [searchResults, setSearchResults] = useState([]);
-	const [isLoading, setIsLoading] = useState(false); // Loading state
+	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
 
 	const handleResultClick = (id) => {
@@ -24,7 +25,7 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 		try {
 			setIsLoading(true); // Set loading state to true while waiting for the response
 			const response = await fetch(
-				`/fruits/?q=${encodeURIComponent(
+				`/${isPersonal ? "personal" : "fruits"}/?q=${encodeURIComponent(
 					query.toLowerCase()
 				)}&limit=${maxResults}&boost=${isBoosted}`
 			);
@@ -70,6 +71,7 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 							value={maxResults}
 							onChange={(e) => setMaxResults(e.target.value)}
 							min="1"
+							max="50"
 						/>
 					</label>
 					<label>
@@ -78,6 +80,14 @@ function SearchPage({ onDarkMode, onSearchResults }) {
 							type="checkbox"
 							checked={isBoosted}
 							onChange={() => setIsBoosted(!isBoosted)}
+						/>
+					</label>
+					<label>
+						Personal DB:
+						<input
+							type="checkbox"
+							checked={isPersonal}
+							onChange={() => setIsPersonal(!isPersonal)}
 						/>
 					</label>
 				</div>

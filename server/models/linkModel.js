@@ -45,5 +45,10 @@ linkSchema.virtual("numIncomingLinks").get(function () {
 
 linkSchema.index({ numIncomingLinks: 1, link: 1 }); // Index by number of incoming links and link itself
 
-const LinkModel = mongoose.model("LinkModel", linkSchema);
-export default LinkModel;
+const FruitModel = mongoose.model("LinkModel", linkSchema, "fruit_links");
+const PersonalModel = mongoose.model(
+	"PersonalModel",
+	linkSchema,
+	"personal_links"
+);
+export { FruitModel, PersonalModel };

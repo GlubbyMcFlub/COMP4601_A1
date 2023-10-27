@@ -1,6 +1,9 @@
 {
-  "dependencies": {
-    "crawler": "^1.4.0",
-    "node-fetch": "^3.3.2"
-  }
+	"dependencies": {
+		"crawler": "^1.4.0",
+		"elasticlunr": "^0.9.5",
+		"ml-matrix": "^6.10.7",
+		"node-fetch": "^3.3.2"
+	},
+	"type": "module"
 }

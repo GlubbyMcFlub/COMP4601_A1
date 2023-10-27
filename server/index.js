@@ -31,5 +31,4 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 
 // Routes
-app.use("/fruits", links);
-app.use("/personal", links);
+app.use("/", links);
