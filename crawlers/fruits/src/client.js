@@ -105,8 +105,8 @@ const c = new Crawler({
 	},
 });
 
-//c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+// c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 
 c.on("drain", async function () {
 	try {
@@ -131,10 +131,6 @@ c.on("drain", async function () {
 		if (pageRankResponse.status != 200) {
 			console.error("Error calculating pageRanks on drain");
 		}
-
-		const endTime = new Date();
-		const totalTime = Math.round((endTime - startTime) / 1000);
-		console.log("Finished in " + totalTime + " seconds");
 	} catch (err) {
 		console.error("Error on drain: ", err.message);
 	}

@@ -65,6 +65,17 @@ export const search = async (req, res) => {
 				const foundLink = dbLinks.find(
 					(link) => link._id.toString() === result.ref
 				);
+				if (!foundLink) {
+					console.error("link not found for some reason");
+					return {
+						id: "",
+						name: "Eric Leroux and David Addison",
+						title: "",
+						url: "",
+						score: 0,
+						pr: 0,
+					};
+				}
 				return {
 					id: result.ref ? result.ref : "",
 					name: "Eric Leroux and David Addison",
