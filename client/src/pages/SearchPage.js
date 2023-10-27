@@ -5,7 +5,7 @@ import LoadingIcon from "../components/LoadingIcon"; // Import your loading icon
 import Result from "../components/Result";
 import SearchResult from "../components/SearchResult.js";
 
-function SearchPage({ onDarkMode, onSearchResults, onChangeDatabase }) {
+function SearchPage({ onDarkMode, onChangeDatabase }) {
 	const [query, setQuery] = useState("");
 	const [maxResults, setMaxResults] = useState(10);
 	const [isBoosted, setIsBoosted] = useState(false);
@@ -35,7 +35,7 @@ function SearchPage({ onDarkMode, onSearchResults, onChangeDatabase }) {
 			console.log(apiUrl);
 			const response = await fetch(apiUrl);
 			const data = await response.json();
-			onSearchResults(data);
+			//onSearchResults(data);
 			setSearchResults(data);
 			setHasSearched(true);
 		} catch (error) {
@@ -70,7 +70,7 @@ function SearchPage({ onDarkMode, onSearchResults, onChangeDatabase }) {
 				<button onClick={handleThemeChange}>Change Theme</button>
 				<div className="filter-container">
 					<label>
-						Max Results:
+						Limit:
 						<input
 							type="number"
 							value={maxResults}
@@ -80,7 +80,7 @@ function SearchPage({ onDarkMode, onSearchResults, onChangeDatabase }) {
 						/>
 					</label>
 					<label>
-						Boost Results:
+						Boost:
 						<input
 							type="checkbox"
 							checked={isBoosted}

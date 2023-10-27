@@ -4,15 +4,15 @@ import Result from "../components/Result";
 import SearchPage from "./SearchPage";
 
 function ContainerPage() {
-	const [searchResults, setSearchResults] = useState([]); // Manage search results here
+	//const [searchResults, setSearchResults] = useState([]); // Manage search results here
 	const [darkMode, setDarkMode] = useState(
 		window.matchMedia("(prefers-color-scheme: dark)").matches
 	);
 	const [database, setDatabase] = useState("fruits");
 
-	const handleSearchResults = (results) => {
-		setSearchResults(results);
-	};
+	// const handleSearchResults = (results) => {
+	// 	setSearchResults(results);
+	// };
 	const handleDatabase = (db) => {
 		setDatabase(db);
 	};
@@ -36,7 +36,7 @@ function ContainerPage() {
 					element={
 						<SearchPage
 							onDarkMode={toggleDarkMode}
-							onSearchResults={handleSearchResults}
+							// onSearchResults={handleSearchResults}
 							onChangeDatabase={handleDatabase}
 						/>
 					}
