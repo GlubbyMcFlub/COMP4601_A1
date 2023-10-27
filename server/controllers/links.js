@@ -61,11 +61,17 @@ export const search = async (req, res, type) => {
 				},
 			});
 
+			const linkIds = searchResults.map((result) => result.ref);
+			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
+			// dbLinks.forEach((link) => {
+			// 	console.log(link._id);
+			// });
+
 			links = await Promise.all(
 				searchResults.map(async (result) => {
-					const foundLink = await selectedSchema.findById(result.ref);
+					const foundLink = dbLinks.find((link) => link._id.equals(result.ref));
 					if (!foundLink) {
-						console.error("link not found for some reason");
+						console.error("link not found for some reason id: ", result.ref);
 						return {
 							id: "",
 							name: "Eric Leroux and David Addison",
