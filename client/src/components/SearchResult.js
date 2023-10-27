@@ -1,7 +1,9 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import WordFrequencies from "./WordFrequencies.js";
 
 const SearchResult = ({
+	id,
 	title,
 	paragraph,
 	result,
@@ -12,13 +14,13 @@ const SearchResult = ({
 }) => {
 	return (
 		<div className="search-result">
-			<h2>{title}</h2>
-			<a href={url} target="_blank" rel="noopener noreferrer">
-				<h4>{url}</h4>
-			</a>
 			<div>
-				<h4>Content</h4>
-				<p>{paragraph}</p>
+				<h2>{title}</h2>
+			</div>
+			<div>
+				<Link to={`/result/${id}`} className="result-link">
+					{url}
+				</Link>
 			</div>
 			<div>
 				<h4>Score</h4>

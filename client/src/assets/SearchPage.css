@@ -120,6 +120,21 @@ button {
 	margin-top: 20px;
 }
 
+/* Add this to your existing CSS or create a new CSS file */
+.hidden {
+	display: none;
+}
+
+.result {
+	height: 700px !important;
+	width: 500px;
+	overflow-y: scroll;
+}
+
+.result ul {
+	font-size: 14px;
+}
+
 .search-result {
 	background-color: var(--secondary-bg);
 	border: 1px solid var(--accent-color);
@@ -128,6 +143,8 @@ button {
 	box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
 	margin: 10px;
 	padding: 20px;
+	word-wrap: break-word;
+	height: 300px;
 }
 
 .search-result h2 {
@@ -151,6 +168,11 @@ h4 {
 .search-result footer {
 	font-size: 14px;
 	vertical-align: bottom;
+}
+
+.search-result a {
+	max-width: 100%; /* Ensure the URL does not overflow its container */
+	overflow: hidden; /* Hide any overflowing content */
 }
 
 label {

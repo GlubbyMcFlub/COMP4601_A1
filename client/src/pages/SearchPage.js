@@ -1,45 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import "../assets/SearchPage.css";
+import Result from "../components/Result";
 import SearchResult from "../components/SearchResult.js";
 
-function SearchPage() {
+function SearchPage({ onDarkMode, onSearchResults }) {
 	const [query, setQuery] = useState("");
-	const [maxResults, setMaxResults] = useState(10); // Default to 10 results
+	const [maxResults, setMaxResults] = useState(10);
 	const [isBoosted, setIsBoosted] = useState(false);
 	const navigate = useNavigate();
-	const [searchResults, setSearchResults] = useState([]);
 	const [hasSearched, setHasSearched] = useState(false);
-	const [isDarkMode, setIsDarkMode] = useState(
-		window.matchMedia("(prefers-color-scheme: dark)").matches
-	);
+	const [selectedResult, setSelectedResult] = useState(null);
+	const [searchResults, setSearchResults] = useState([]);
 
 	let endpoint = "/fruits/";
 
-	useEffect(() => {
-		if (isDarkMode) {
-			document.body.classList.add("dark-mode");
-		} else {
-			document.body.classList.remove("dark-mode");
-		}
-	}, [isDarkMode]);
-
 	const handleResultClick = (id) => {
-		navigate(`/result/${id}`); // Using navigate instead of history.push
+		navigate(`/result/${id}`);
+		setSelectedResult(id);
 	};
 
 	const handleSearch = async () => {
 		try {
-			// needs to support the following parameters:
-			// q - query
-			// boost - true or false
-			// limit - number of results to return
 			const response = await fetch(
 				`${endpoint}?q=${encodeURIComponent(
 					query.toLowerCase()
 				)}&limit=${maxResults}&boost=${isBoosted}`
 			);
 			const data = await response.json();
+			onSearchResults(data); // Update search results in the parent component
 			setSearchResults(data);
 			setHasSearched(true);
 		} catch (error) {
@@ -54,13 +43,12 @@ function SearchPage() {
 	};
 
 	const handleThemeChange = () => {
-		setIsDarkMode(!isDarkMode);
+		onDarkMode();
 	};
 
-	// add boost checkbox, and number of results form/slider
 	return (
-		<div className="SearchPage">
-			<div>
+		<div className={`SearchPage ${selectedResult ? "hidden" : ""}`}>
+			<div className="search-component">
 				<h1>Qooqle</h1>
 				<input
 					type="text"
@@ -89,35 +77,34 @@ function SearchPage() {
 					/>
 				</label>
 			</div>
-			{hasSearched && (
+			{hasSearched && !selectedResult && (
 				<div className="search-results">
-					{Object.keys(searchResults).length > 0 ? (
-						Object.keys(searchResults).map((key, index) => {
-							const result = searchResults[key];
-							return (
-								<div
+					{searchResults.length > 0 ? (
+						searchResults.map((result, index) => (
+							<div
+								key={index}
+								onClick={() => handleResultClick(result.id)}
+								className="search-result-item"
+							>
+								<SearchResult
+									id={result.id}
 									key={index}
-									onClick={() => handleResultClick(result.id)}
-									className="search-result-item"
-								>
-									<SearchResult
-										key={index}
-										title={result.title}
-										paragraph={result.paragraph}
-										url={result.url}
-										score={result.score}
-										wordFrequencies={result.wordFrequencies}
-										pageRank={result.pageRank}
-										result={index + 1}
-									/>
-								</div>
-							);
-						})
+									title={result.title}
+									url={result.url}
+									score={result.score}
+									pageRank={result.pr}
+									result={index + 1}
+								/>
+							</div>
+						))
 					) : (
 						<p className="error-message">No search results found.</p>
 					)}
 				</div>
 			)}
+			<Routes>
+				{selectedResult && <Route path="/result/:id" element={<Result />} />}
+			</Routes>
 		</div>
 	);
 }
