@@ -5,6 +5,8 @@ import fetch from "node-fetch";
 const baseEndPoint = "http://localhost:5000/personal/";
 
 const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+// const baseCrawl =
+// 	"https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html";
 const maxPagesToVisit = 1000;
 const rateLimit = 10;
 const pagesData = {};
@@ -122,6 +124,8 @@ queuedLinks.add(baseCrawl);
 
 c.on("drain", async function () {
 	try {
+		//add data to database
+
 		for (const url in pagesData) {
 			if (pagesData[url].complete) {
 				const body = {
@@ -156,6 +160,32 @@ c.on("drain", async function () {
 			} else {
 				console.log("Skipping incomplete page: ", url);
 			}
+		}
+
+		//index data
+
+		const scoreResponse = await fetch(baseEndPoint + "score/", {
+			method: "PATCH",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		await scoreResponse.json();
+		if (scoreResponse.status != 200) {
+			console.error("Error calculating scores on drain");
+		}
+
+		//calculate page rank
+
+		const pageRankResponse = await fetch(baseEndPoint + "pageRank/", {
+			method: "PATCH",
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		await pageRankResponse.json();
+		if (pageRankResponse.status != 200) {
+			console.error("Error calculating pageRanks on drain");
 		}
 	} catch (err) {
 		console.error("Error on drain: ", err.message);
