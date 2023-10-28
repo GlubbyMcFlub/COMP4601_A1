@@ -4,15 +4,16 @@ import fetch from "node-fetch";
 const baseEndPoint = "http://localhost:5000/personal/";
 
 let pagesAdded = 0;
-const maxPagesToVisit = 5;
-const rateLimit = 1000;
+const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+const maxPagesToVisit = 1000;
+const rateLimit = 10;
 const pagesData = {};
 
 const c = new Crawler({
-	maxConnections: 10,
+	maxConnections: 1,
 	rateLimit: rateLimit,
 	preRequest: function (options, done) {
-		if (options.uri.endsWith(".html")) {
+		if (options.uri.endsWith(".html") && options.uri.startsWith(baseCrawl)) {
 			done();
 		} else {
 			done(null, false);
@@ -52,14 +53,15 @@ const c = new Crawler({
 					let wordFrequencies = {};
 
 					// Calculate word frequencies
-					words.forEach((word) => {
-						wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
-					});
-
-					// Sort and get the top 10 most frequent words
-					wordFrequencies = Object.entries(wordFrequencies)
-						.sort((a, b) => b[1] - a[1])
-						.slice(0, 10);
+					if (words) {
+						words.forEach((word) => {
+							wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+						});
+						// Sort and get the top 10 most frequent words
+						wordFrequencies = Object.entries(wordFrequencies)
+							.sort((a, b) => b[1] - a[1])
+							.slice(0, 10);
+					}
 
 					pagesData[url] = {
 						title: title,
@@ -78,17 +80,27 @@ const c = new Crawler({
 						incomingLinks.length > 0 &&
 						wordFrequencies.length > 0;
 
-					if (hasNecessaryInfo) {
-						pagesData[url].complete = true; // Mark the page as complete
-						pagesAdded++;
-					}
-
 					// Queue outgoing links for further crawling
 					outgoingLinks.forEach((outgoingLink) => {
-						if (!pagesData[outgoingLink]) {
+						if (
+							!pagesData[outgoingLink] &&
+							outgoingLink.startsWith(baseCrawl)
+						) {
 							c.queue(outgoingLink);
 						}
 					});
+
+					if (hasNecessaryInfo) {
+						pagesData[url].complete = true; // Mark the page as complete
+						pagesAdded++;
+						if (pagesAdded % 50 == 0) {
+							console.log(pagesAdded);
+						}
+						if (pagesAdded >= maxPagesToVisit) {
+							c.queue = [];
+							console.log("cleared the queue");
+						}
+					}
 				} else {
 					console.log("Skipping already visited or incomplete page: ", url);
 				}
@@ -101,7 +113,8 @@ const c = new Crawler({
 	},
 });
 
-c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+// c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+c.queue(baseCrawl);
 
 c.on("drain", async function () {
 	try {
