@@ -29,7 +29,7 @@ function Result({ database }) {
 	return (
 		<div className="result-container">
 			<div>
-				<Link to="/">Back to Search Results</Link>
+				<Link to="/">Back to Search</Link>
 			</div>
 			{isLoading ? (
 				<LoadingIcon className="loading-icon" /> // Show loading icon while data is being fetched
@@ -54,7 +54,7 @@ function Result({ database }) {
 						<p>{resultData.paragraph}</p>
 					</div>
 					<div>
-						<h4>Incoming Links</h4>
+						<h4>Incoming Links ({resultData.incomingLinks.length})</h4>
 						<ul>
 							{resultData.incomingLinks &&
 								resultData.incomingLinks.map((link, index) => (
@@ -67,7 +67,7 @@ function Result({ database }) {
 						</ul>
 					</div>
 					<div>
-						<h4>Outgoing Links</h4>
+						<h4>Outgoing Links ({resultData.outgoingLinks.length})</h4>
 						<ul>
 							{resultData.outgoingLinks &&
 								resultData.outgoingLinks.map((link, index) => (

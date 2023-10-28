@@ -1,6 +1,6 @@
 import Crawler from "crawler";
-import fetch from "node-fetch";
 import { EventEmitter } from "events";
+import fetch from "node-fetch";
 
 const baseEndPoint = "http://localhost:5000/personal/";
 
@@ -10,13 +10,14 @@ const rateLimit = 10;
 const pagesData = {};
 let queuedLinks = new Set();
 
-EventEmitter.setMaxListeners(20);
+EventEmitter.defaultMaxListeners = 20;
 
 const c = new Crawler({
 	maxConnections: 1,
 	rateLimit: rateLimit,
 	maxListeners: 20,
 	retries: 3,
+	followRedirect: false, // Prevent automatic following of redirects
 	preRequest: function (options, done) {
 		const isWikiPage = options.uri.startsWith(baseCrawl);
 		const notUserLogin = !options.uri.includes("UserLogin");
@@ -35,82 +36,77 @@ const c = new Crawler({
 			if (error) {
 				console.error("Error:", error);
 			} else {
-				const $ = res.$;
-				const baseUrl = new URL(res.options.uri);
-				const url = baseUrl.href;
-				const hasParagraph = $("p").length > 0;
+				if (res.statusCode >= 300 && res.statusCode < 400) {
+					const redirectLocation = res.headers.location;
+					if (
+						!queuedLinks.has(redirectLocation) &&
+						!redirectLocation.includes("UserLogin") &&
+						!redirectLocation.includes("signin") &&
+						queuedLinks.size < maxPagesToVisit
+					) {
+						queuedLinks.add(redirectLocation);
+						c.queue(redirectLocation);
+					}
+				} else if (res.statusCode === 200) {
+					const $ = res.$;
+					const baseUrl = new URL(res.options.uri);
+					const url = baseUrl.href;
+					const hasParagraph = $("p").length > 0;
+					if (!pagesData[url] && hasParagraph) {
+						const outgoingLinks = $("a")
+							.map(function () {
+								const link = new URL($(this).attr("href"), baseUrl);
+								return link.href;
+							})
+							.get();
 
-				if (!pagesData[url] && hasParagraph) {
-					const outgoingLinks = $("a")
-						.map(function () {
-							const link = new URL($(this).attr("href"), baseUrl);
-							return link.href;
-						})
-						.get();
+						const incomingLinks = $("a")
+							.map(function () {
+								const incomingLink = new URL($(this).attr("href"), baseUrl)
+									.href;
+								return incomingLink;
+							})
+							.get();
 
-					const incomingLinks = []; // Array to store incoming links
+						const paragraph = $("p").text().trim().replace(/\s+/g, " ");
+						const title = $("title").text();
 
-					// Find and store incoming links
-					$("a").each(function () {
-						const incomingLink = new URL($(this).attr("href"), baseUrl).href;
-						incomingLinks.push(incomingLink);
-					});
+						const words = paragraph.match(/\b\w+\b/g);
+						let wordFrequencies = {};
 
-					const paragraph = $("p").text().trim().replace(/\s+/g, " ");
-					const title = $("title").text();
+						if (words) {
+							words.forEach((word) => {
+								if (!/^\d+$/.test(word)) {
+									const lowercaseWord = word.toLowerCase();
+									wordFrequencies[lowercaseWord] =
+										(wordFrequencies[lowercaseWord] || 0) + 1;
+								}
+							});
+							wordFrequencies = Object.entries(wordFrequencies)
+								.sort((a, b) => b[1] - a[1])
+								.slice(0, 10);
+						}
 
-					// Separate paragraph into an array of words
-					const words = paragraph.match(/\b\w+\b/g);
+						pagesData[url] = {
+							title: title,
+							paragraph: paragraph,
+							outgoingLinks: outgoingLinks,
+							incomingLinks: incomingLinks,
+							wordFrequencies: wordFrequencies,
+							complete: true,
+						};
 
-					let wordFrequencies = {};
-
-					// Calculate word frequencies
-					if (words) {
-						words.forEach((word) => {
-							if (!/^\d+$/.test(word)) {
-								wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+						outgoingLinks.forEach((outgoingLink) => {
+							if (
+								!queuedLinks.has(outgoingLink) &&
+								outgoingLink.startsWith(baseCrawl) &&
+								queuedLinks.size < maxPagesToVisit
+							) {
+								queuedLinks.add(outgoingLink);
+								c.queue(outgoingLink);
 							}
 						});
-						// Sort and get the top 10 most frequent words
-						wordFrequencies = Object.entries(wordFrequencies)
-							.sort((a, b) => b[1] - a[1])
-							.slice(0, 10);
 					}
-
-					pagesData[url] = {
-						title: title,
-						paragraph: paragraph,
-						outgoingLinks: outgoingLinks,
-						incomingLinks: incomingLinks,
-						wordFrequencies: wordFrequencies,
-						complete: false, // Mark the page as incomplete initially
-					};
-
-					// Check if the page has all necessary information
-					const hasNecessaryInfo =
-						title !== "" &&
-						paragraph !== "" &&
-						outgoingLinks.length > 0 &&
-						incomingLinks.length > 0 &&
-						wordFrequencies.length > 0;
-
-					// Queue outgoing links for further crawling
-					outgoingLinks.forEach((outgoingLink) => {
-						if (
-							!queuedLinks.has(outgoingLink) &&
-							outgoingLink.startsWith(baseCrawl) &&
-							queuedLinks.size < maxPagesToVisit
-						) {
-							queuedLinks.add(outgoingLink);
-							c.queue(outgoingLink);
-						}
-					});
-
-					if (hasNecessaryInfo) {
-						pagesData[url].complete = true; // Mark the page as complete
-					}
-				} else {
-					// console.log("Skipping already visited or incomplete page: ", url);
 				}
 			}
 		} catch (err) {
@@ -121,8 +117,6 @@ const c = new Crawler({
 	},
 });
 
-// c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-// c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
 c.queue(baseCrawl);
 queuedLinks.add(baseCrawl);
 

@@ -1,5 +1,6 @@
 {
 	"dependencies": {
+		"cheerio": "^0.22.0",
 		"crawler": "^1.4.0",
 		"elasticlunr": "^0.9.5",
 		"events": "^3.3.0",
