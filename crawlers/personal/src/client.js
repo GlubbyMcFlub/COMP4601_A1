@@ -3,19 +3,29 @@ import fetch from "node-fetch";
 
 const baseEndPoint = "http://localhost:5000/personal/";
 
-let pagesAdded = 0;
 const baseCrawl = "https://legiontd2.fandom.com/wiki/";
-const maxPagesToVisit = 1000;
+const maxPagesToVisit = 30;
 const rateLimit = 10;
 const pagesData = {};
+let queuedLinks = new Set();
 
 const c = new Crawler({
 	maxConnections: 1,
 	rateLimit: rateLimit,
+	maxListeners: 20,
+	retries: 3,
+	// followRedirect: false,
 	preRequest: function (options, done) {
-		if (options.uri.endsWith(".html") && options.uri.startsWith(baseCrawl)) {
+		const isHTML = options.uri.endsWith(".html");
+		// const isHTML = options.uri.includes(".html");
+		// const isWikiPage = options.uri.startsWith(baseCrawl);
+		const isNotFile = !options.uri.match(/\.(wav|png|jpg|gif|pdf|#)$/i); // Exclude specific file extensions
+		// console.log(isWikiPage, isNotFile);
+
+		if (isHTML && isNotFile) {
 			done();
 		} else {
+			console.log(isHTML, isWikiPage, isNotFile);
 			done(null, false);
 		}
 	},
@@ -28,7 +38,7 @@ const c = new Crawler({
 				const baseUrl = new URL(res.options.uri);
 				const url = baseUrl.href;
 
-				if (!pagesData[url] && pagesAdded < maxPagesToVisit) {
+				if (!pagesData[url]) {
 					const outgoingLinks = $("a")
 						.map(function () {
 							const link = new URL($(this).attr("href"), baseUrl);
@@ -44,7 +54,7 @@ const c = new Crawler({
 						incomingLinks.push(incomingLink);
 					});
 
-					const paragraph = $("p").text();
+					const paragraph = $("p").text().trim().replace(/\s+/g, " ");
 					const title = $("title").text();
 
 					// Separate paragraph into an array of words
@@ -83,26 +93,20 @@ const c = new Crawler({
 					// Queue outgoing links for further crawling
 					outgoingLinks.forEach((outgoingLink) => {
 						if (
-							!pagesData[outgoingLink] &&
-							outgoingLink.startsWith(baseCrawl)
+							!queuedLinks.has(outgoingLink) &&
+							queuedLinks.size < maxPagesToVisit
 						) {
+							queuedLinks.add(outgoingLink);
 							c.queue(outgoingLink);
+							// console.log(c.queue.length, queuedLinks.size);
 						}
 					});
 
 					if (hasNecessaryInfo) {
 						pagesData[url].complete = true; // Mark the page as complete
-						pagesAdded++;
-						if (pagesAdded % 50 == 0) {
-							console.log(pagesAdded);
-						}
-						if (pagesAdded >= maxPagesToVisit) {
-							c.queue = [];
-							console.log("cleared the queue");
-						}
 					}
 				} else {
-					console.log("Skipping already visited or incomplete page: ", url);
+					// console.log("Skipping already visited or incomplete page: ", url);
 				}
 			}
 		} catch (err) {
@@ -114,7 +118,8 @@ const c = new Crawler({
 });
 
 // c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-c.queue(baseCrawl);
+c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+// c.queue(baseCrawl);
 
 c.on("drain", async function () {
 	try {
