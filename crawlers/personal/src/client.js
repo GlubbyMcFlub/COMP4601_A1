@@ -3,68 +3,124 @@ import fetch from "node-fetch";
 
 const baseEndPoint = "http://localhost:5000/personal/";
 
-const startTime = new Date();
+let pagesAdded = 0;
+const maxPagesToVisit = 5;
+const rateLimit = 1000;
+const pagesData = {};
 
 const c = new Crawler({
-	maxConnections: 1,
+	maxConnections: 10,
+	rateLimit: rateLimit,
 	preRequest: function (options, done) {
-		// Check if the URL ends with ".html" indicating an HTML page
 		if (options.uri.endsWith(".html")) {
-			done(); // Continue processing the URL
+			done();
 		} else {
-			done(null, false); // Skip processing non-HTML URLs
+			done(null, false);
 		}
 	},
 	callback: async function (error, res, done) {
-		if (error) {
-			console.error(error);
-		} else {
-			const $ = res.$;
-			const baseUrl = new URL(res.options.uri);
-			const url = baseUrl.href;
-			const outgoingLinks = $("a")
-				.map(function () {
-					const link = new URL($(this).attr("href"), baseUrl);
-					return link.href;
-				})
-				.get();
+		try {
+			if (error) {
+				console.error("Error:", error);
+			} else {
+				const $ = res.$;
+				const baseUrl = new URL(res.options.uri);
+				const url = baseUrl.href;
 
-			const paragraph = $("p").text();
+				if (!pagesData[url] && pagesAdded < maxPagesToVisit) {
+					const outgoingLinks = $("a")
+						.map(function () {
+							const link = new URL($(this).attr("href"), baseUrl);
+							return link.href;
+						})
+						.get();
 
-			//separate paragraph into array of words
-			const words = paragraph.match(/\b\w+\b/g);
+					const incomingLinks = []; // Array to store incoming links
 
-			let wordFrequencies = {};
+					// Find and store incoming links
+					$("a").each(function () {
+						const incomingLink = new URL($(this).attr("href"), baseUrl).href;
+						incomingLinks.push(incomingLink);
+					});
 
-			//calculate word frequencies
-			words.forEach((word) => {
-				if (wordFrequencies[word]) {
-					wordFrequencies[word]++;
-				} else {
-					wordFrequencies[word] = 1;
-				}
-			});
+					const paragraph = $("p").text();
+					const title = $("title").text();
 
-			//sort and get top 10 most frequent words
-			wordFrequencies = Object.entries(wordFrequencies).sort(
-				(a, b) => b[1] - a[1]
-			);
-			wordFrequencies - wordFrequencies.slice(0, 10);
+					// Separate paragraph into an array of words
+					const words = paragraph.match(/\b\w+\b/g);
 
-			const body = {
-				update: {
-					$set: {
-						title: $("title").text(),
-						link: url,
+					let wordFrequencies = {};
+
+					// Calculate word frequencies
+					words.forEach((word) => {
+						wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+					});
+
+					// Sort and get the top 10 most frequent words
+					wordFrequencies = Object.entries(wordFrequencies)
+						.sort((a, b) => b[1] - a[1])
+						.slice(0, 10);
+
+					pagesData[url] = {
+						title: title,
 						paragraph: paragraph,
 						outgoingLinks: outgoingLinks,
+						incomingLinks: incomingLinks,
 						wordFrequencies: wordFrequencies,
-					},
-				},
-				link: url,
-			};
+						complete: false, // Mark the page as incomplete initially
+					};
 
-			try {
+					// Check if the page has all necessary information
+					const hasNecessaryInfo =
+						title !== "" &&
+						paragraph !== "" &&
+						outgoingLinks.length > 0 &&
+						incomingLinks.length > 0 &&
+						wordFrequencies.length > 0;
+
+					if (hasNecessaryInfo) {
+						pagesData[url].complete = true; // Mark the page as complete
+						pagesAdded++;
+					}
+
+					// Queue outgoing links for further crawling
+					outgoingLinks.forEach((outgoingLink) => {
+						if (!pagesData[outgoingLink]) {
+							c.queue(outgoingLink);
+						}
+					});
+				} else {
+					console.log("Skipping already visited or incomplete page: ", url);
+				}
+			}
+		} catch (err) {
+			console.error("Callback Error:", err);
+		} finally {
+			done();
+		}
+	},
+});
+
+c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
+
+c.on("drain", async function () {
+	try {
+		for (const url in pagesData) {
+			if (pagesData[url].complete) {
+				const body = {
+					update: {
+						$set: {
+							title: pagesData[url].title,
+							link: url,
+							paragraph: pagesData[url].paragraph,
+							outgoingLinks: pagesData[url].outgoingLinks,
+							incomingLinks: pagesData[url].incomingLinks,
+							wordFrequencies: pagesData[url].wordFrequencies,
+						},
+					},
+					link: url,
+				};
+
 				const response = await fetch(baseEndPoint, {
 					method: "PUT",
 					headers: {
@@ -76,68 +132,13 @@ const c = new Crawler({
 				const data = await response.json();
 
 				if (response.status === 200 || response.status === 201) {
-					outgoingLinks.forEach(async (outgoingLink) => {
-						let outgoingLinkBody = {
-							update: {
-								$set: { link: outgoingLink },
-								$push: { incomingLinks: url },
-							},
-							link: outgoingLink,
-						};
-
-						const outgoingLinkResponse = await fetch(baseEndPoint, {
-							method: "PUT",
-							headers: {
-								"Content-Type": "application/json",
-							},
-							body: JSON.stringify(outgoingLinkBody),
-						});
-						const outgoingLinkData = await outgoingLinkResponse.json();
-						if (outgoingLinkResponse.status === 200) {
-							c.queue(outgoingLink);
-						} else if (outgoingLinkResponse.status != 201) {
-							console.error(
-								"Failed to add outgoing link. Error: ",
-								outgoingLinkData.message
-							);
-						}
-					});
+					console.log("Added to database: ", url);
 				} else {
 					console.error("Failed to add link. Error: ", data.message);
 				}
-			} catch (err) {
-				console.error("Error: ", err.message);
+			} else {
+				console.log("Skipping incomplete page: ", url);
 			}
-		}
-		done();
-	},
-});
-
-c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-//c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
-
-c.on("drain", async function () {
-	try {
-		const scoreResponse = await fetch(baseEndPoint + "score/", {
-			method: "PATCH",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
-		await scoreResponse.json();
-		if (scoreResponse.status != 200) {
-			console.error("Error calculating scores on drain");
-		}
-
-		const pageRankResponse = await fetch(baseEndPoint + "pageRank/", {
-			method: "PATCH",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
-		await pageRankResponse.json();
-		if (pageRankResponse.status != 200) {
-			console.error("Error calculating pageRanks on drain");
 		}
 	} catch (err) {
 		console.error("Error on drain: ", err.message);
