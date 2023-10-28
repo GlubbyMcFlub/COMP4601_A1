@@ -1,31 +1,32 @@
 import Crawler from "crawler";
 import fetch from "node-fetch";
+import { EventEmitter } from "events";
 
 const baseEndPoint = "http://localhost:5000/personal/";
 
 const baseCrawl = "https://legiontd2.fandom.com/wiki/";
-const maxPagesToVisit = 30;
+const maxPagesToVisit = 1000;
 const rateLimit = 10;
 const pagesData = {};
 let queuedLinks = new Set();
+
+EventEmitter.setMaxListeners(20);
 
 const c = new Crawler({
 	maxConnections: 1,
 	rateLimit: rateLimit,
 	maxListeners: 20,
 	retries: 3,
-	// followRedirect: false,
 	preRequest: function (options, done) {
-		const isHTML = options.uri.endsWith(".html");
-		// const isHTML = options.uri.includes(".html");
-		// const isWikiPage = options.uri.startsWith(baseCrawl);
-		const isNotFile = !options.uri.match(/\.(wav|png|jpg|gif|pdf|#)$/i); // Exclude specific file extensions
-		// console.log(isWikiPage, isNotFile);
-
-		if (isHTML && isNotFile) {
+		const isWikiPage = options.uri.startsWith(baseCrawl);
+		const notUserLogin = !options.uri.includes("UserLogin");
+		const isValidUrl = !options.uri.match(/\.(wav|png|jpg|gif|pdf|#)$/i);
+		const isProblematicUrl = options.uri.includes(
+			"auth.fandom.com/kratos-public/self-service/login/browser"
+		);
+		if (isWikiPage && isValidUrl && notUserLogin && !isProblematicUrl) {
 			done();
 		} else {
-			console.log(isHTML, isWikiPage, isNotFile);
 			done(null, false);
 		}
 	},
@@ -37,8 +38,9 @@ const c = new Crawler({
 				const $ = res.$;
 				const baseUrl = new URL(res.options.uri);
 				const url = baseUrl.href;
+				const hasParagraph = $("p").length > 0;
 
-				if (!pagesData[url]) {
+				if (!pagesData[url] && hasParagraph) {
 					const outgoingLinks = $("a")
 						.map(function () {
 							const link = new URL($(this).attr("href"), baseUrl);
@@ -65,7 +67,9 @@ const c = new Crawler({
 					// Calculate word frequencies
 					if (words) {
 						words.forEach((word) => {
-							wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+							if (!/^\d+$/.test(word)) {
+								wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+							}
 						});
 						// Sort and get the top 10 most frequent words
 						wordFrequencies = Object.entries(wordFrequencies)
@@ -94,11 +98,11 @@ const c = new Crawler({
 					outgoingLinks.forEach((outgoingLink) => {
 						if (
 							!queuedLinks.has(outgoingLink) &&
+							outgoingLink.startsWith(baseCrawl) &&
 							queuedLinks.size < maxPagesToVisit
 						) {
 							queuedLinks.add(outgoingLink);
 							c.queue(outgoingLink);
-							// console.log(c.queue.length, queuedLinks.size);
 						}
 					});
 
@@ -118,8 +122,9 @@ const c = new Crawler({
 });
 
 // c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
-// c.queue(baseCrawl);
+// c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue(baseCrawl);
+queuedLinks.add(baseCrawl);
 
 c.on("drain", async function () {
 	try {
