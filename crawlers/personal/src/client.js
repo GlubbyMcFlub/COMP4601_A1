@@ -62,14 +62,6 @@ const c = new Crawler({
 							})
 							.get();
 
-						// const incomingLinks = $("a")
-						// 	.map(function () {
-						// 		const incomingLink = new URL($(this).attr("href"), baseUrl)
-						// 			.href;
-						// 		return incomingLink;
-						// 	})
-						// 	.get();
-
 						const paragraph = $("p").text().trim().replace(/\s+/g, " ");
 						const title = $("title").text();
 

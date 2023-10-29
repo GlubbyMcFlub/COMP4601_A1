@@ -39,12 +39,6 @@ const linkSchema = new Schema(
 	{ timestamps: true }
 );
 
-linkSchema.virtual("numIncomingLinks").get(function () {
-	return this.incomingLinks.length;
-});
-
-linkSchema.index({ numIncomingLinks: 1, link: 1 }); // Index by number of incoming links and link itself
-
 const FruitModel = mongoose.model("LinkModel", linkSchema, "fruit_links");
 const PersonalModel = mongoose.model(
 	"PersonalModel",
