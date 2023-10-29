@@ -56,7 +56,8 @@ const c = new Crawler({
 	preRequest: function (options, done) {
 		try {
 			const isWikiPage = options.uri.startsWith(baseCrawl);
-			const isQuery = options.uri.includes("?");
+			const isQuery =
+				options.uri.includes("?") || options.uri.includes("?action=");
 			const notBlacklisted = !blacklisted.some((keyword) =>
 				options.uri.includes(keyword)
 			);
@@ -64,29 +65,19 @@ const c = new Crawler({
 				/\.(wav|png|jpg|gif|pdf|#|mp3|mp4)$/i
 			);
 
-			if (isQuery || options.uri.includes("?action=")) {
-				console.log("Skipping special page:", options.uri);
-				isGood = false;
-				done();
-				//done({ skip: true });
-			} else if (isWikiPage && isValidUrl && notBlacklisted && !isQuery) {
-				//console.log("Crawling:", options.uri);
-				console.log(
-					"\u001b[" + 32 + "m" + "Crawling: " + options.uri + "\u001b[0m"
-				);
+			if (isWikiPage && isValidUrl && notBlacklisted && !isQuery) {
 				isGood = true;
+				console.log("Crawling:", options.uri);
 				done();
 			} else {
 				console.log("Skipping invalid URL:", options.uri);
 				isGood = false;
 				done();
-				//done({ skip: true });
 			}
 		} catch (error) {
 			console.error("Error in preRequest:", error);
 			isGood = false;
 			done();
-			//done({ skip: true });
 		}
 	},
 	callback: async function (error, res, done) {
