@@ -4,9 +4,9 @@ import fetch from "node-fetch";
 
 // Initial endpoint for personal crawler
 const baseEndPoint = "http://localhost:5000/personal/";
-// const baseCrawl = "https://legiontd2.fandom.com/wiki/";
-const baseCrawl =
-	"https://legiontd2.fandom.com/wiki/Chloropixie?action=history";
+const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+// const baseCrawl =
+// 	"https://legiontd2.fandom.com/wiki/Chloropixie?action=history";
 
 // Crawler variables
 const maxConnections = 1;
@@ -18,7 +18,7 @@ EventEmitter.defaultMaxListeners = 20;
 
 // Global variables
 const maxPagesToVisit = 1000;
-let pagesData = {};
+let pagesData = new Set();
 let queuedLinks = new Set();
 const blacklisted = [
 	"UserLogin",
@@ -45,6 +45,8 @@ const blacklisted = [
 	- rateLimit (number): the rate limit for the crawler
 	- followRedirect (boolean): whether to follow redirects manually or not
 */
+
+let isGood = false;
 const c = new Crawler({
 	maxConnections: maxConnections,
 	rateLimit: rateLimit,
@@ -52,46 +54,57 @@ const c = new Crawler({
 	retries: maxRetries,
 	followRedirect: followRedirect,
 	preRequest: function (options, done) {
-		const isWikiPage = options.uri.startsWith(baseCrawl);
-		const isQuery = options.uri.includes("?");
-		const notBlacklisted = !blacklisted.some((keyword) =>
-			options.uri.includes(keyword)
-		);
-		const isValidUrl = !options.uri.match(
-			/\.(wav|png|jpg|gif|pdf|#|mp3|mp4)$/i
-		);
-		if (isQuery) {
-			console.log(options.uri);
-		}
-		const isValidContentType =
-			options.headers["Content-Type"] &&
-			options.headers["Content-Type"].includes("text/html");
-		if (
-			isWikiPage &&
-			isValidUrl &&
-			notBlacklisted &&
-			!isQuery &&
-			isValidContentType
-		) {
-			console.log("hey");
+		try {
+			const isWikiPage = options.uri.startsWith(baseCrawl);
+			const isQuery = options.uri.includes("?");
+			const notBlacklisted = !blacklisted.some((keyword) =>
+				options.uri.includes(keyword)
+			);
+			const isValidUrl = !options.uri.match(
+				/\.(wav|png|jpg|gif|pdf|#|mp3|mp4)$/i
+			);
+
+			if (isQuery || options.uri.includes("?action=")) {
+				console.log("Skipping special page:", options.uri);
+				isGood = false;
+				done();
+				//done({ skip: true });
+			} else if (isWikiPage && isValidUrl && notBlacklisted && !isQuery) {
+				//console.log("Crawling:", options.uri);
+				console.log(
+					"\u001b[" + 32 + "m" + "Crawling: " + options.uri + "\u001b[0m"
+				);
+				isGood = true;
+				done();
+			} else {
+				console.log("Skipping invalid URL:", options.uri);
+				isGood = false;
+				done();
+				//done({ skip: true });
+			}
+		} catch (error) {
+			console.error("Error in preRequest:", error);
+			isGood = false;
 			done();
-		} else {
-			done({ skip: true });
+			//done({ skip: true });
 		}
 	},
 	callback: async function (error, res, done) {
 		try {
-			if (!res && !res.headers && !res.headers["content-type"]) {
-				console.log("Skipping page, no headers");
-				done();
-				return;
-			}
 			if (error) {
 				console.error("Error:", error);
 			} else {
 				// Catch redirects
 				if (res.statusCode >= 300 && res.statusCode < 400) {
 					const redirectLocation = res.headers.location;
+					const hasQ = redirectLocation.includes("?");
+					const check =
+						!res ||
+						!res.headers ||
+						!res.headers["content-type"] ||
+						!res.headers["content-type"].includes("text/html") ||
+						!isGood ||
+						hasQ;
 					const notBlacklisted = !blacklisted.some((keyword) =>
 						redirectLocation.includes(keyword)
 					);
@@ -99,7 +112,8 @@ const c = new Crawler({
 					if (
 						!queuedLinks.has(redirectLocation) &&
 						notBlacklisted &&
-						queuedLinks.size < maxPagesToVisit
+						queuedLinks.size < maxPagesToVisit &&
+						!check
 					) {
 						queuedLinks.add(redirectLocation);
 						c.queue(redirectLocation);
