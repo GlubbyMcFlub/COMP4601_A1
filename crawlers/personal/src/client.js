@@ -2,32 +2,58 @@ import Crawler from "crawler";
 import { EventEmitter } from "events";
 import fetch from "node-fetch";
 
+// Initial endpoint for personal crawler
 const baseEndPoint = "http://localhost:5000/personal/";
-
 const baseCrawl = "https://legiontd2.fandom.com/wiki/";
-// const baseCrawl =
-// 	"https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html";
-const maxPagesToVisit = 30;
+
+// Crawler variables
+const maxConnections = 1;
+const maxRetries = 3;
+const maxListeners = 20;
 const rateLimit = 10;
+const followRedirect = false;
+EventEmitter.defaultMaxListeners = 20;
+
+// Global variables
+const maxPagesToVisit = 30;
 let pagesData = {};
 let queuedLinks = new Set();
 
-EventEmitter.defaultMaxListeners = 20;
+/*
+	This crawler crawls the personal website, and adds the data to the database.
+	Pre-request:
+	- only crawl pages that are part of the wiki (crawler should not go to other websites)
+	- only crawl pages that are not user login pages (crawler should not go to user login pages)
+	- only crawl pages that are not media files (crawler should not go to media files or invalid links)
 
+	Drain: 
+	- add pages to database
+	- calculate incoming links for each page
+	- request server to calculate scores for each page
+
+	Params: 
+	- maxConnections (number): the maximum number of connections to make at once
+	- maxRetries (number): the maximum number of retries to make
+	- maxListeners (number): the maximum number of listeners for the crawler
+	- rateLimit (number): the rate limit for the crawler
+	- followRedirect (boolean): whether to follow redirects manually or not
+*/
 const c = new Crawler({
-	maxConnections: 1,
+	maxConnections: maxConnections,
 	rateLimit: rateLimit,
-	maxListeners: 20,
-	retries: 3,
-	followRedirect: false, // Prevent automatic following of redirects
+	maxListeners: maxListeners,
+	retries: maxRetries,
+	followRedirect: followRedirect,
 	preRequest: function (options, done) {
 		const isWikiPage = options.uri.startsWith(baseCrawl);
-		const notUserLogin = !options.uri.includes("UserLogin");
-		const isValidUrl = !options.uri.match(/\.(wav|png|jpg|gif|pdf|#)$/i);
-		const isProblematicUrl = options.uri.includes(
-			"auth.fandom.com/kratos-public/self-service/login/browser"
+		const notUserLogin = !(
+			options.uri.includes("UserLogin") ||
+			options.uri.includes(
+				"auth.fandom.com/kratos-public/self-service/login/browser"
+			)
 		);
-		if (isWikiPage && isValidUrl && notUserLogin && !isProblematicUrl) {
+		const isValidUrl = !options.uri.match(/\.(wav|png|jpg|gif|pdf|#)$/i);
+		if (isWikiPage && isValidUrl && notUserLogin) {
 			done();
 		} else {
 			done(null, false);
@@ -38,8 +64,10 @@ const c = new Crawler({
 			if (error) {
 				console.error("Error:", error);
 			} else {
+				// Catch redirects
 				if (res.statusCode >= 300 && res.statusCode < 400) {
 					const redirectLocation = res.headers.location;
+					// Check if redirect location is valid
 					if (
 						!queuedLinks.has(redirectLocation) &&
 						!redirectLocation.includes("UserLogin") &&
@@ -50,10 +78,13 @@ const c = new Crawler({
 						c.queue(redirectLocation);
 					}
 				} else if (res.statusCode === 200) {
+					// If not a redirect, extract data from DOM
 					const $ = res.$;
 					const baseUrl = new URL(res.options.uri);
 					const url = baseUrl.href;
 					const hasParagraph = $("p").length > 0;
+
+					// If page has paragraph, add to pagesData
 					if (!pagesData[url] && hasParagraph) {
 						const outgoingLinks = $("a")
 							.map(function () {
@@ -65,9 +96,11 @@ const c = new Crawler({
 						const paragraph = $("p").text().trim().replace(/\s+/g, " ");
 						const title = $("title").text();
 
+						// Separate paragraph into array of words
 						const words = paragraph.match(/\b\w+\b/g);
 						let wordFrequencies = {};
 
+						// Calculate word frequencies
 						if (words) {
 							words.forEach((word) => {
 								if (!/^\d+$/.test(word)) {
@@ -81,6 +114,7 @@ const c = new Crawler({
 								.slice(0, 10);
 						}
 
+						// Add page to pagesData
 						pagesData[url] = {
 							title: title,
 							paragraph: paragraph,
@@ -89,6 +123,7 @@ const c = new Crawler({
 							complete: true,
 						};
 
+						// Add outgoing links to queue
 						outgoingLinks.forEach((outgoingLink) => {
 							if (
 								!queuedLinks.has(outgoingLink) &&
@@ -115,7 +150,7 @@ queuedLinks.add(baseCrawl);
 
 c.on("drain", async function () {
 	try {
-		//calculate incomingLinks
+		// Calculate incomingLinks
 		for (const url in pagesData) {
 			if (pagesData[url].complete) {
 				pagesData[url].outgoingLinks.forEach((outgoingLink) => {
@@ -129,7 +164,7 @@ c.on("drain", async function () {
 				});
 			}
 		}
-		//add data to database
+		// Add pages to database
 		for (const url in pagesData) {
 			if (pagesData[url].complete) {
 				const body = {
@@ -166,8 +201,7 @@ c.on("drain", async function () {
 			}
 		}
 
-		//index data
-
+		// Tell the server to calculate the scores and pageRanks
 		const scoreResponse = await fetch(baseEndPoint + "score/", {
 			method: "PATCH",
 			headers: {
@@ -178,8 +212,6 @@ c.on("drain", async function () {
 		if (scoreResponse.status != 200) {
 			console.error("Error calculating scores on drain");
 		}
-
-		//calculate page rank
 
 		const pageRankResponse = await fetch(baseEndPoint + "pageRank/", {
 			method: "PATCH",

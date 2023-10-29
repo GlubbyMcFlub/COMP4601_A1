@@ -1,16 +1,26 @@
 import Crawler from "crawler";
 import fetch from "node-fetch";
 
+// Initial endpoint for fruits crawler
 const baseEndPoint = "http://localhost:5000/fruits/";
+const baseCrawl =
+	"https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html";
 
-const startTime = new Date();
+/*
+	This crawler crawls the fruits website, and adds the data to the database.
+	Drain: 
+	- request server to calculate scores for each page
+	- request server to calculate page ranks for each page
 
+	Params: none
+*/
 const c = new Crawler({
 	maxConnections: 1,
 	callback: async function (error, res, done) {
 		if (error) {
 			console.error(error);
 		} else {
+			// Extract data from DOM
 			const $ = res.$;
 			const baseUrl = new URL(res.options.uri);
 			const url = baseUrl.href;
@@ -23,12 +33,12 @@ const c = new Crawler({
 
 			const paragraph = $("p").text();
 
-			//separate paragraph into array of words
+			// Separate paragraph into array of words
 			const words = paragraph.match(/\b\w+\b/g);
 
 			let wordFrequencies = {};
 
-			//calculate word frequencies
+			// Calculate word frequencies
 			words.forEach((word) => {
 				if (wordFrequencies[word]) {
 					wordFrequencies[word]++;
@@ -37,12 +47,13 @@ const c = new Crawler({
 				}
 			});
 
-			//sort and get top 10 most frequent words
+			// Sort and get top 10 most frequent words
 			wordFrequencies = Object.entries(wordFrequencies).sort(
 				(a, b) => b[1] - a[1]
 			);
 			wordFrequencies - wordFrequencies.slice(0, 10);
 
+			// Generate payload
 			const body = {
 				update: {
 					$set: {
@@ -57,6 +68,7 @@ const c = new Crawler({
 			};
 
 			try {
+				// Add page to database
 				const response = await fetch(baseEndPoint, {
 					method: "PUT",
 					headers: {
@@ -68,6 +80,7 @@ const c = new Crawler({
 				const data = await response.json();
 
 				if (response.status === 200 || response.status === 201) {
+					// Add skeleton pages to database (incomplete pages)
 					outgoingLinks.forEach(async (outgoingLink) => {
 						let outgoingLinkBody = {
 							update: {
@@ -105,11 +118,11 @@ const c = new Crawler({
 	},
 });
 
-//c.queue("https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html");
-c.queue("https://people.scs.carleton.ca/~davidmckenney/fruitgraph/N-0.html");
+c.queue(baseCrawl);
 
 c.on("drain", async function () {
 	try {
+		// Tell the server to calculate the scores and pageRanks
 		const scoreResponse = await fetch(baseEndPoint + "score/", {
 			method: "PATCH",
 			headers: {
