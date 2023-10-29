@@ -4,7 +4,9 @@ import fetch from "node-fetch";
 
 // Initial endpoint for personal crawler
 const baseEndPoint = "http://localhost:5000/personal/";
-const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+// const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+const baseCrawl =
+	"https://legiontd2.fandom.com/wiki/Chloropixie?action=history";
 
 // Crawler variables
 const maxConnections = 1;
@@ -51,24 +53,35 @@ const c = new Crawler({
 	followRedirect: followRedirect,
 	preRequest: function (options, done) {
 		const isWikiPage = options.uri.startsWith(baseCrawl);
+		const isQuery = options.uri.includes("?");
 		const notBlacklisted = !blacklisted.some((keyword) =>
 			options.uri.includes(keyword)
 		);
 		const isValidUrl = !options.uri.match(
 			/\.(wav|png|jpg|gif|pdf|#|mp3|mp4)$/i
 		);
+		if (isQuery) {
+			console.log(options.uri);
+		}
 		const isValidContentType =
 			options.headers["Content-Type"] &&
 			options.headers["Content-Type"].includes("text/html");
-		if (isWikiPage && isValidUrl && notBlacklisted && isValidContentType) {
+		if (
+			isWikiPage &&
+			isValidUrl &&
+			notBlacklisted &&
+			!isQuery &&
+			isValidContentType
+		) {
+			console.log("hey");
 			done();
 		} else {
-			done(null, false);
+			done({ skip: true });
 		}
 	},
 	callback: async function (error, res, done) {
 		try {
-			if (!res.headers["content-type"]) {
+			if (!res && !res.headers && !res.headers["content-type"]) {
 				console.log("Skipping page, no headers");
 				done();
 				return;
