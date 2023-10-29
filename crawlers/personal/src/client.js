@@ -7,9 +7,9 @@ const baseEndPoint = "http://localhost:5000/personal/";
 const baseCrawl = "https://legiontd2.fandom.com/wiki/";
 // const baseCrawl =
 // 	"https://people.scs.carleton.ca/~davidmckenney/tinyfruits/N-0.html";
-const maxPagesToVisit = 1000;
+const maxPagesToVisit = 30;
 const rateLimit = 10;
-const pagesData = {};
+let pagesData = {};
 let queuedLinks = new Set();
 
 EventEmitter.defaultMaxListeners = 20;
@@ -62,13 +62,13 @@ const c = new Crawler({
 							})
 							.get();
 
-						const incomingLinks = $("a")
-							.map(function () {
-								const incomingLink = new URL($(this).attr("href"), baseUrl)
-									.href;
-								return incomingLink;
-							})
-							.get();
+						// const incomingLinks = $("a")
+						// 	.map(function () {
+						// 		const incomingLink = new URL($(this).attr("href"), baseUrl)
+						// 			.href;
+						// 		return incomingLink;
+						// 	})
+						// 	.get();
 
 						const paragraph = $("p").text().trim().replace(/\s+/g, " ");
 						const title = $("title").text();
@@ -93,7 +93,6 @@ const c = new Crawler({
 							title: title,
 							paragraph: paragraph,
 							outgoingLinks: outgoingLinks,
-							incomingLinks: incomingLinks,
 							wordFrequencies: wordFrequencies,
 							complete: true,
 						};
@@ -124,8 +123,21 @@ queuedLinks.add(baseCrawl);
 
 c.on("drain", async function () {
 	try {
+		//calculate incomingLinks
+		for (const url in pagesData) {
+			if (pagesData[url].complete) {
+				pagesData[url].outgoingLinks.forEach((outgoingLink) => {
+					if (pagesData[outgoingLink]) {
+						if (!pagesData[outgoingLink].incomingLinks) {
+							pagesData[outgoingLink].incomingLinks = new Set();
+						} else {
+							pagesData[outgoingLink].incomingLinks.add(url);
+						}
+					}
+				});
+			}
+		}
 		//add data to database
-
 		for (const url in pagesData) {
 			if (pagesData[url].complete) {
 				const body = {
@@ -135,7 +147,7 @@ c.on("drain", async function () {
 							link: url,
 							paragraph: pagesData[url].paragraph,
 							outgoingLinks: pagesData[url].outgoingLinks,
-							incomingLinks: pagesData[url].incomingLinks,
+							incomingLinks: Array.from(pagesData[url].incomingLinks),
 							wordFrequencies: pagesData[url].wordFrequencies,
 						},
 					},
