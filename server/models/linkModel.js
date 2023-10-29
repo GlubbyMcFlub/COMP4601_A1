@@ -1,12 +1,24 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+/*
+	Schema for a link
+	{
+		title: String,
+		link: String,
+		paragraph: String,
+		wordFrequencies: Map<String, Number>,
+		incomingLinks: [String],
+		outgoingLinks: [String],
+		pageRank: Number,
+	}
+*/
 const linkSchema = new Schema(
 	{
 		title: {
 			type: String,
 			default: "",
-			index: true, // Index the 'title' field for faster searches
+			index: true,
 		},
 		link: {
 			type: String,
@@ -20,8 +32,8 @@ const linkSchema = new Schema(
 		},
 		wordFrequencies: {
 			type: Map,
-			of: { type: Number }, // Specify the type of values in the map
-			index: true, // Index the 'wordFrequencies' field for efficient key phrase searches
+			of: { type: Number },
+			index: true,
 		},
 		incomingLinks: {
 			type: [String],
@@ -39,6 +51,7 @@ const linkSchema = new Schema(
 	{ timestamps: true }
 );
 
+// Define a fruit and personal model, each of type linkSchema, but with different collections
 const FruitModel = mongoose.model("LinkModel", linkSchema, "fruit_links");
 const PersonalModel = mongoose.model(
 	"PersonalModel",

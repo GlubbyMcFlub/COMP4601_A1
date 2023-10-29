@@ -1,6 +1,6 @@
 import express from "express";
 
-// controllers
+// Controllers
 import {
 	calculatePageRank,
 	indexLinks,
@@ -9,6 +9,17 @@ import {
 } from "../controllers/links.js";
 
 const router = express.Router();
+
+/*
+	GET /fruits -> search
+	GET /personal -> search
+	PUT /fruits -> updateLink
+	PUT /personal -> updateLink
+	PATCH /fruits/pageRank -> calculatePageRank
+	PATCH /personal/pageRank -> calculatePageRank
+	PATCH /fruits/score -> indexLinks
+	PATCH /personal/score -> indexLinks
+*/
 
 // SEARCH
 router.get("/fruits", (req, res) => {

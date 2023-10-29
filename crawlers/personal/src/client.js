@@ -15,15 +15,20 @@ const followRedirect = false;
 EventEmitter.defaultMaxListeners = 20;
 
 // Global variables
-const maxPagesToVisit = 30;
+const maxPagesToVisit = 1000;
 let pagesData = {};
 let queuedLinks = new Set();
+const blacklisted = [
+	"UserLogin",
+	"auth.fandom.com/kratos-public/self-service/login/browser",
+	"community.fandom.com",
+];
 
 /*
 	This crawler crawls the personal website, and adds the data to the database.
 	Pre-request:
 	- only crawl pages that are part of the wiki (crawler should not go to other websites)
-	- only crawl pages that are not user login pages (crawler should not go to user login pages)
+	- only crawl pages that are not blacklisted (crawler should not go to user login pages, etc)
 	- only crawl pages that are not media files (crawler should not go to media files or invalid links)
 
 	Drain: 
@@ -46,14 +51,16 @@ const c = new Crawler({
 	followRedirect: followRedirect,
 	preRequest: function (options, done) {
 		const isWikiPage = options.uri.startsWith(baseCrawl);
-		const notUserLogin = !(
-			options.uri.includes("UserLogin") ||
-			options.uri.includes(
-				"auth.fandom.com/kratos-public/self-service/login/browser"
-			)
+		const notBlacklisted = !blacklisted.some((keyword) =>
+			options.uri.includes(keyword)
 		);
-		const isValidUrl = !options.uri.match(/\.(wav|png|jpg|gif|pdf|#)$/i);
-		if (isWikiPage && isValidUrl && notUserLogin) {
+		const isValidUrl = !options.uri.match(
+			/\.(wav|png|jpg|gif|pdf|#|mp3|mp4)$/i
+		);
+		const isValidContentType =
+			options.headers["Content-Type"] &&
+			options.headers["Content-Type"].includes("text/html");
+		if (isWikiPage && isValidUrl && notBlacklisted && isValidContentType) {
 			done();
 		} else {
 			done(null, false);
@@ -61,17 +68,24 @@ const c = new Crawler({
 	},
 	callback: async function (error, res, done) {
 		try {
+			if (!res.headers["content-type"]) {
+				console.log("Skipping page, no headers");
+				done();
+				return;
+			}
 			if (error) {
 				console.error("Error:", error);
 			} else {
 				// Catch redirects
 				if (res.statusCode >= 300 && res.statusCode < 400) {
 					const redirectLocation = res.headers.location;
+					const notBlacklisted = !blacklisted.some((keyword) =>
+						redirectLocation.includes(keyword)
+					);
 					// Check if redirect location is valid
 					if (
 						!queuedLinks.has(redirectLocation) &&
-						!redirectLocation.includes("UserLogin") &&
-						!redirectLocation.includes("signin") &&
+						notBlacklisted &&
 						queuedLinks.size < maxPagesToVisit
 					) {
 						queuedLinks.add(redirectLocation);
@@ -152,14 +166,16 @@ c.on("drain", async function () {
 	try {
 		// Calculate incomingLinks
 		for (const url in pagesData) {
-			if (pagesData[url].complete) {
+			if (pagesData[url].complete && pagesData[url].outgoingLinks) {
+				if (!pagesData[url].incomingLinks) {
+					pagesData[url].incomingLinks = new Set();
+				}
 				pagesData[url].outgoingLinks.forEach((outgoingLink) => {
 					if (pagesData[outgoingLink]) {
 						if (!pagesData[outgoingLink].incomingLinks) {
 							pagesData[outgoingLink].incomingLinks = new Set();
-						} else {
-							pagesData[outgoingLink].incomingLinks.add(url);
 						}
+						pagesData[outgoingLink].incomingLinks.add(url);
 					}
 				});
 			}

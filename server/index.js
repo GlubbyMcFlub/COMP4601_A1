@@ -1,5 +1,4 @@
 // Imports
-import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -8,27 +7,41 @@ import mongoose from "mongoose";
 // Routes
 import links from "./routes/links.js";
 
-// Load
+// Load Environment Variables
 dotenv.config({ path: "./config.env" });
 
 // Variables
 const app = express();
-const CONNECTION_URL = String(process.env.CONNECTION_URL);
-console.log(CONNECTION_URL);
 const PORT = process.env.PORT || 5000;
+const CONNECTION_URL = process.env.CONNECTION_URL;
 
-// Database & Start Server
+// Database Connection & Start Server
 mongoose
-	.connect(CONNECTION_URL)
-	.then(() => {
-		app.listen(PORT, () => console.log(`Server running on port: ${PORT}`));
+	.connect(CONNECTION_URL, {
+		useNewUrlParser: true,
+		useUnifiedTopology: true,
 	})
-	.catch((error) => console.log(error.message));
+	.then(() => {
+		console.log("Connected to MongoDB. Great success!");
+		app.listen(PORT, () => {
+			console.log(`Server is running on http://localhost:${PORT}`);
+		});
+	})
+	.catch((error) => {
+		console.error("Error connecting to MongoDB. Womp womp:", error.message);
+		process.exit(1);
+	});
 
 // Middleware
-app.use(bodyParser.json({ limit: "30mb", extended: true }));
-app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
+app.use(express.json({ limit: "30mb" }));
+app.use(express.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 
 // Routes
 app.use("/", links);
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+	console.error(err.stack);
+	res.status(500).send("Something went wrong!");
+});

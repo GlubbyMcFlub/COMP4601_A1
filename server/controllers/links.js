@@ -13,28 +13,51 @@ const index = elasticlunr(function () {
 	this.setRef("id");
 });
 
+// Initialize NodeCache
 const cache = new NodeCache({ stdTTL: 60 });
+const GROUP_MEMBERS = "Eric Leroux and David Addison";
+const ALPHA = 0.1;
+const EUC_STOPPING_THRESHOLD = 0.0001;
 
-//searches database for appropriate data according to request and query
-//uses search score and boost (if specified) to rank data
+/*
+	This function searches the database for appropriate data according to request and query.
+	If specified, it uses search score and boost to rank data.
+	Params:
+	- req: request object
+		- id: id of resource to search for
+		- q: query to search for
+		- boost: whether or not to boost search results by page rank
+		- limit: number of results to return
+	- res: response object
+	- type: type of data to search for (fruits or personal)
+*/
 export const search = async (req, res, type) => {
 	try {
+		// Get query parameters and cache the query
 		const { id, q, boost, limit } = req.query;
 		const applyBoost = boost === "true";
 		const cacheKey = `search:${q}:${applyBoost}:${limit}:${type}`;
 		let links;
 		let selectedSchema;
 
-		//choose appropriate schema
+		// Choose appropriate schema according to type
 		if (type === "fruits") selectedSchema = FruitModel;
 		else if (type === "personal") selectedSchema = PersonalModel;
 
+		// If both ID and query are specified, return error
+		if (id && q) {
+			return res
+				.status(400)
+				.json({ message: "Cannot specify both ID and query." });
+		}
+
+		// If query is cached, return cached result
 		const cachedResult = cache.get(cacheKey);
 		if (cachedResult) {
 			return res.status(200).json(cachedResult);
 		}
 
-		//if request contains an id then find resource by id and send it back
+		// If request contains an ID then find resource by ID and send it back
 		if (id) {
 			if (!mongoose.Types.ObjectId.isValid(id)) {
 				return res.status(400).json({ message: "Invalid link ID" });
@@ -45,7 +68,7 @@ export const search = async (req, res, type) => {
 			}
 			links = {
 				id: foundLink._id,
-				name: "Eric Leroux and David Addison",
+				name: GROUP_MEMBERS,
 				paragraph: foundLink.paragraph,
 				title: foundLink.title,
 				url: foundLink.link,
@@ -54,8 +77,10 @@ export const search = async (req, res, type) => {
 				wordFrequencies: [...foundLink.wordFrequencies],
 				pr: foundLink.pageRank,
 			};
-			//if queue, then perform a search to find appropriate resources
 		} else if (q) {
+			// If request contains a query, then perform a search to find appropriate resources
+
+			// Search for query in index
 			const searchResults = index.search(q, {
 				fields: {
 					paragraph: { boost: 3 },
@@ -68,6 +93,7 @@ export const search = async (req, res, type) => {
 			const linkIds = searchResults.map((result) => result.ref);
 			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
 
+			// Map search results to links
 			links = await Promise.all(
 				searchResults.map(async (result) => {
 					const foundLink = dbLinks.find((link) => link._id.equals(result.ref));
@@ -77,7 +103,7 @@ export const search = async (req, res, type) => {
 						);
 						return {
 							id: "",
-							name: "Eric Leroux and David Addison",
+							name: GROUP_MEMBERS,
 							title: "",
 							url: "",
 							score: 0,
@@ -86,7 +112,7 @@ export const search = async (req, res, type) => {
 					}
 					return {
 						id: result.ref ? result.ref : "",
-						name: "Eric Leroux and David Addison",
+						name: GROUP_MEMBERS,
 						title: foundLink.title ? foundLink.title : "",
 						url: foundLink.link ? foundLink.link : "",
 						score: result.score ? result.score : 0,
@@ -94,18 +120,18 @@ export const search = async (req, res, type) => {
 					};
 				})
 			);
-			//multiply score by page rank if boost is true, otherwise only sort by score
+			// Multiply score by page rank if boost is true, otherwise only sort by score
 			if (!applyBoost) {
 				links.sort((a, b) => b.score - a.score);
 			} else {
 				links.sort((a, b) => b.score * b.pr - a.score * a.pr);
 			}
 
-			//trim results down to limit
+			// Trim results down to limit
 			links = links.slice(0, limit);
 			let linksToAdd = await selectedSchema.find().limit(limit);
 
-			//add any other links with score of 0 if limit is not yet reached
+			// Add any other links with score of 0 if limit is not yet reached
 			for (const linkToAdd of linksToAdd) {
 				if (links.length == limit) {
 					break;
@@ -123,8 +149,8 @@ export const search = async (req, res, type) => {
 					links.push(doc);
 				}
 			}
-			//return all links according to limit
 		} else {
+			// Return all links according to limit
 			links = await selectedSchema.find().limit(limit);
 			links = links.map((link) => ({
 				id: link._id,
@@ -143,7 +169,16 @@ export const search = async (req, res, type) => {
 	}
 };
 
-//update database according to update body and query of request
+/*
+	This function updates the database according to the update body and query of the request.
+	Params:
+	- req: request object
+		- body: body of request
+			- update: update to apply to database
+			- link: link to update
+	- res: response object
+	- type: type of data to update (fruits or personal)
+*/
 export const updateLink = async (req, res, type) => {
 	try {
 		const { link, update } = req.body;
@@ -152,8 +187,8 @@ export const updateLink = async (req, res, type) => {
 		if (type === "fruits") selectedSchema = FruitModel;
 		else if (type === "personal") selectedSchema = PersonalModel;
 
-		//if incoming link already exists then make sure we don't push it again
-		//usually happens when crawler is ran twice without clearing database
+		// If the incoming link already exists then make sure we don't push it again.
+		// This usually happens when the crawler is ran more than once without clearing database
 		if ("$push" in update) {
 			const exists = await selectedSchema.exists({ link: link });
 			if (exists) {
@@ -164,24 +199,28 @@ export const updateLink = async (req, res, type) => {
 			}
 		}
 
-		//will create new resource if it does not exist and updates otherwise
+		// Create a new resource if it does not exist, otherwise update it
 		const newLink = await selectedSchema.findOneAndUpdate(query, update, {
 			upsert: true,
 			new: true,
 			includeResultMetadata: true,
 		});
-		//return status 201 if there was an update and 200 if a new resource was created
-		if (newLink.lastErrorObject.updatedExisting) {
-			res.status(201).json(newLink);
-		} else {
-			res.status(200).json(newLink);
-		}
+		// Return status 201 if there was an update and 200 if a new resource was created
+		res
+			.status(newLink.lastErrorObject.updatedExisting ? 200 : 201)
+			.json(newLink);
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
 };
 
-//caluclate page rank of each page
+/*
+	This function calculates the page rank of each link in the database.
+	Params:
+	- req: request object
+	- res: response object
+	- type: type of data to calculate page rank for (fruits or personal)
+*/
 export const calculatePageRank = async (req, res, type) => {
 	try {
 		let selectedSchema;
@@ -189,13 +228,10 @@ export const calculatePageRank = async (req, res, type) => {
 		else if (type === "personal") selectedSchema = PersonalModel;
 		let links = await selectedSchema.find();
 		if (!links) {
-			console.error("no links found");
+			console.error("No links found");
 		}
 
-		const ALPHA = 0.1;
-		const EUC_STOPPING_THRESHOLD = 0.0001;
-
-		//create map of links to index in links array
+		// Create map of links to index in links array
 		const linkIndexingMap = {};
 		links.forEach((link, index) => {
 			{
@@ -203,7 +239,7 @@ export const calculatePageRank = async (req, res, type) => {
 			}
 		});
 
-		//create probability matrix
+		// Create probability matrix
 		const probabilityMatrix = new Matrix(links.length, links.length);
 		links.forEach((link, row) => {
 			link.outgoingLinks.forEach((outgoingLink) => {
@@ -212,8 +248,8 @@ export const calculatePageRank = async (req, res, type) => {
 			});
 		});
 
-		//if a row has all 0's, then set each entry to links.length to simulate teleportation
-		//otherwise, set each 1 to 1/numOnes to show the probability that a link will be chosen
+		// If a row has all 0's, then set each entry to links.length to simulate teleportation.
+		// Otherwise, set each 1 to 1/numOnes to show the probability that a link will be chosen.
 		for (let i = 0; i < probabilityMatrix.rows; i++) {
 			const numOnes = probabilityMatrix
 				.getRow(i)
@@ -231,10 +267,10 @@ export const calculatePageRank = async (req, res, type) => {
 			}
 		}
 
-		//multiply matrix by the chance that a link will be chosen
+		// Multiply matrix by the chance that a link will be chosen
 		probabilityMatrix.mul(1 - ALPHA);
 
-		//add the chance that a teleportation will occur
+		// Add the chance that a teleportation will occur
 		let teleportationMatrix = new Matrix(links.length, links.length);
 		for (let i = 0; i < probabilityMatrix.rows; i++) {
 			teleportationMatrix.setRow(
@@ -245,7 +281,7 @@ export const calculatePageRank = async (req, res, type) => {
 
 		probabilityMatrix.add(teleportationMatrix);
 
-		//power iteration. multiply pageRanks matrix by probabilityMatrix until euclidean distance between last two vectors < 0.0001
+		// Power iteration: multiply pageRanks matrix by probabilityMatrix until euclidean distance between last two vectors < 0.0001
 		let pageRanks = new Matrix(1, links.length);
 		pageRanks.set(0, 0, 1);
 		let oldPageRanks;
@@ -256,7 +292,7 @@ export const calculatePageRank = async (req, res, type) => {
 			Math.abs(oldPageRanks.norm() - pageRanks.norm()) >= EUC_STOPPING_THRESHOLD
 		);
 
-		//save links
+		// Save links
 		links.forEach(async (link, column = 0) => {
 			link.pageRank = pageRanks.get(0, column);
 			link.save();
@@ -268,18 +304,25 @@ export const calculatePageRank = async (req, res, type) => {
 	}
 };
 
-//add links to elasticlunr index
+/*
+	This function adds links to the elasticlunr index.
+	Params:
+	- req: request object
+	- res: response object
+	- type: type of data to index (fruits or personal)
+*/
 export const indexLinks = async (req, res, type) => {
-	let selectedSchema;
-	if (type === "fruits") selectedSchema = FruitModel;
-	else if (type === "personal") selectedSchema = PersonalModel;
 	try {
+		let selectedSchema;
+		if (type === "fruits") selectedSchema = FruitModel;
+		else if (type === "personal") selectedSchema = PersonalModel;
+
 		let links = await selectedSchema.find();
 		if (!links) {
 			console.error("no links found");
 		}
 
-		//index links
+		// Index links
 		links.forEach((link) => {
 			let doc = {
 				id: link._id,
@@ -290,7 +333,7 @@ export const indexLinks = async (req, res, type) => {
 			index.addDoc(doc);
 		});
 
-		res.status(200).json({});
+		res.status(200).json({ message: "Links indexed" });
 	} catch (error) {
 		res.status(400).json({ message: error.message });
 	}
