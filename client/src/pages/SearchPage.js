@@ -1,10 +1,27 @@
 import React, { useState } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
-import "../assets/SearchPage.css";
-import LoadingIcon from "../components/LoadingIcon"; // Import your loading icon component
+import "../assets/styles.css";
+import LoadingIcon from "../components/LoadingIcon";
 import Result from "../components/Result";
 import SearchResult from "../components/SearchResult.js";
 
+/*
+	This component is the search page of the application. It handles searching and displaying search results.
+	Params:
+	- onDarkMode (function): a function that toggles dark mode
+	- onChangeDatabase (function): a function that changes the database endpoint for requests (fruits or personal)
+	States:
+	- query (string): the query to search for
+	- maxResults (number): the maximum number of results to return
+	- isBoosted (boolean): whether to boost results
+	- isPersonal (boolean): whether to search the personal database
+	- hasSearched (boolean): whether a search has been performed
+	- selectedResult (string): the id of the result that has been selected
+	- searchResults (array): the search results
+	- isLoading (boolean): whether the data is being fetched
+
+	TODO: Add searchResults state so that returning to the search page from a result page doesn't cause a re-search (this is a nice-to-have feature)
+*/
 function SearchPage({ onDarkMode, onChangeDatabase }) {
 	const [query, setQuery] = useState("");
 	const [maxResults, setMaxResults] = useState(10);
@@ -32,10 +49,8 @@ function SearchPage({ onDarkMode, onChangeDatabase }) {
 				apiUrl += `&q=${encodeURIComponent(query.toLowerCase())}`;
 			}
 
-			console.log(apiUrl);
 			const response = await fetch(apiUrl);
 			const data = await response.json();
-			//onSearchResults(data);
 			setSearchResults(data);
 			setHasSearched(true);
 		} catch (error) {
@@ -76,7 +91,7 @@ function SearchPage({ onDarkMode, onChangeDatabase }) {
 							value={maxResults}
 							onChange={(e) => setMaxResults(e.target.value)}
 							min="1"
-							max="50"
+							max="50" // TODO: You can still enter a number greater than 50 if you type, but not if you use the up/down arrows (leaving as is, doubt this will be an issue)
 						/>
 					</label>
 					<label>
@@ -119,7 +134,7 @@ function SearchPage({ onDarkMode, onChangeDatabase }) {
 							</div>
 						))
 					) : (
-						<p className="error-message">No search results found.</p> // TODO: As per A1 specs, this will never actually appear (we return random data if no results are found)
+						<p className="error-message">No search results found.</p> // TODO: As per A1 specs, this will never actually appear (we return random data if no results are found), keeping it anyways
 					)}
 				</div>
 			)}

@@ -1,8 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "../assets/SearchPage.css";
+import "../assets/styles.css";
 import WordFrequencies from "./WordFrequencies.js";
 
+/*
+	This component is a search result that displays basic information about a single result. Clicking on one of these results will take you to the Result page.
+	Params: 
+	- id (string): the id of the result
+	- title (string): the title of the result
+	- result (number): the number of the result
+	- score (number): the score of the result
+	- url (string): the url of the result
+	- pageRank (number): the page rank of the result
+	- wordFrequencies (object): the word frequencies of the result
+*/
 const SearchResult = ({
 	id,
 	title,

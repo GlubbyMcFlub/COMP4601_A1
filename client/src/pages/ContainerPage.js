@@ -3,16 +3,18 @@ import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import Result from "../components/Result";
 import SearchPage from "./SearchPage";
 
+/*
+	This component is the container for the entire application. It handles routing and dark mode (global states).
+	Params: none
+	States: 
+	- darkMode (boolean): whether dark mode is enabled
+	- database (string): the endpoint to fetch data from (fruits or personal)
+*/
 function ContainerPage() {
-	//const [searchResults, setSearchResults] = useState([]); // Manage search results here
 	const [darkMode, setDarkMode] = useState(
 		window.matchMedia("(prefers-color-scheme: dark)").matches
 	);
 	const [database, setDatabase] = useState("fruits");
-
-	// const handleSearchResults = (results) => {
-	// 	setSearchResults(results);
-	// };
 	const handleDatabase = (db) => {
 		setDatabase(db);
 	};
@@ -36,7 +38,6 @@ function ContainerPage() {
 					element={
 						<SearchPage
 							onDarkMode={toggleDarkMode}
-							// onSearchResults={handleSearchResults}
 							onChangeDatabase={handleDatabase}
 						/>
 					}

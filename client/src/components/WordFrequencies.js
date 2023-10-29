@@ -1,5 +1,10 @@
 import React from "react";
 
+/*
+	This component is a list of word frequencies
+	Params: 
+	- wordFrequencies (map): a map of words to their frequencies
+*/
 const WordFrequencies = ({ wordFrequencies }) => {
 	if (!wordFrequencies) {
 		return null;

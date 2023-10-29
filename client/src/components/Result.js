@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import LoadingIcon from "./LoadingIcon"; // Import your loading icon component
+import LoadingIcon from "./LoadingIcon";
 import WordFrequencies from "./WordFrequencies";
 
+/*
+	This component is a search result that displays information about a single result
+	Params: database (string): the endpoint to fetch data from (fruits or personal)
+	States: 
+	- resultData (object): the data of the result
+	- isLoading (boolean): whether the data is being fetched
+*/
 function Result({ database }) {
 	const { id } = useParams();
 	const [resultData, setResultData] = useState({});
-	const [isLoading, setIsLoading] = useState(true); // Loading state
+	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
 		const fetchResultData = async () => {
@@ -32,7 +39,7 @@ function Result({ database }) {
 				<Link to="/">Back to Search</Link>
 			</div>
 			{isLoading ? (
-				<LoadingIcon className="loading-icon" /> // Show loading icon while data is being fetched
+				<LoadingIcon className="loading-icon" />
 			) : (
 				<div className="search-result result">
 					<div>
