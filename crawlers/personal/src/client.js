@@ -4,11 +4,10 @@ import fetch from "node-fetch";
 
 // Initial endpoint for personal crawler
 const baseEndPoint = "http://localhost:5000/personal/";
-// const baseCrawl = "https://legiontd2.fandom.com/wiki/";
-const baseCrawl2 = "https://starwars.fandom.com/wiki/";
+
+// Initial URL to crawl
+const baseURL = "https://starwars.fandom.com/wiki/";
 const baseCrawl = "https://starwars.fandom.com/wiki/Main_Page";
-// const baseCrawl =
-// 	"https://legiontd2.fandom.com/wiki/Chloropixie?action=history";
 
 // Crawler variables
 const maxConnections = 1;
@@ -35,31 +34,31 @@ const blacklistedFileTypes = [
 const blacklistedTokens = ["?", "#", "undefined"];
 const blacklistedSites = ["UserLogin", "community.fandom.com"];
 
+/*
+	Checks if a URL is valid or not
+	- URL must start with baseURL
+	- URL must not contain any blacklisted sites
+	- URL must not contain any blacklisted file types
+	- URL must not contain any blacklisted tokens
+	Params: 
+	- url (string): the url to check
+*/
 function isValidUrl(url) {
-	// console.log(url);
-	if (!url.startsWith(baseCrawl2)) {
-		// console.log(url);
-
+	if (!url.startsWith(baseURL)) {
 		return false;
 	}
 	for (const site of blacklistedSites) {
 		if (url.includes(site)) {
-			// console.log(site);
-
 			return false;
 		}
 	}
 	for (const type of blacklistedFileTypes) {
 		if (url.includes(type)) {
-			// console.log(type);
-
 			return false;
 		}
 	}
 	for (const token of blacklistedTokens) {
 		if (url.includes(token)) {
-			// console.log(token);
-
 			return false;
 		}
 	}
@@ -73,19 +72,16 @@ function isValidUrl(url) {
 	- only crawl pages that are not blacklisted (crawler should not go to user login pages, etc)
 	- only crawl pages that are not media files (crawler should not go to media files or invalid links)
 
+	Callback:
+	- extract data from DOM
+	- add pages to pagesData
+	- add outgoing links to queue
+
 	Drain: 
 	- add pages to database
 	- calculate incoming links for each page
 	- request server to calculate scores for each page
-
-	Params: 
-	- maxConnections (number): the maximum number of connections to make at once
-	- maxRetries (number): the maximum number of retries to make
-	- maxListeners (number): the maximum number of listeners for the crawler
-	- rateLimit (number): the rate limit for the crawler
-	- followRedirect (boolean): whether to follow redirects manually or not
 */
-
 const c = new Crawler({
 	maxConnections: maxConnections,
 	rateLimit: rateLimit,
@@ -95,10 +91,8 @@ const c = new Crawler({
 	preRequest: function (options, done) {
 		try {
 			if (isValidUrl(options.uri)) {
-				// console.log("Crawling:", options.uri);
 				done();
 			} else {
-				// console.log("Skipping invalid URL:", options.uri);
 				console.log("prerequest: ", options.uri);
 				done();
 			}
