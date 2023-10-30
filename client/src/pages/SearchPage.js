@@ -123,7 +123,6 @@ function SearchPage({ onDarkMode, onChangeDatabase }) {
 								className="search-result-item"
 							>
 								<SearchResult
-									id={result.id}
 									key={index}
 									title={result.title}
 									url={result.url}

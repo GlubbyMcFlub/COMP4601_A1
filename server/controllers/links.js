@@ -4,12 +4,12 @@ import mongoose from "mongoose";
 import NodeCache from "node-cache";
 import { FruitModel, PersonalModel } from "../models/linkModel.js";
 
+// TODO: Multiple indexes for different searches?
 // Initialize ElasticLunr index
 const index = elasticlunr(function () {
 	this.addField("title");
 	this.addField("paragraph");
 	this.addField("outgoingLinks");
-	this.addField("wordFrequencies");
 	this.setRef("id");
 });
 
@@ -83,15 +83,16 @@ export const search = async (req, res, type) => {
 			// Search for query in index
 			const searchResults = index.search(q, {
 				fields: {
-					paragraph: { boost: 3 },
-					title: { boost: 2 },
+					paragraph: { boost: 2 },
+					title: { boost: 3 },
 					outgoingLinks: { boost: 1 },
-					wordFrequencies: { boost: 4 },
 				},
 			});
 
 			const linkIds = searchResults.map((result) => result.ref);
-			const dbLinks = await selectedSchema.find({ _id: { $in: linkIds } });
+			const dbLinks = await selectedSchema
+				.find({ _id: { $in: linkIds } })
+				.lean();
 
 			// Map search results to links
 			links = await Promise.all(
@@ -129,7 +130,7 @@ export const search = async (req, res, type) => {
 
 			// Trim results down to limit
 			links = links.slice(0, limit);
-			let linksToAdd = await selectedSchema.find().limit(limit);
+			let linksToAdd = await selectedSchema.find().limit(limit).lean();
 
 			// Add any other links with score of 0 if limit is not yet reached
 			for (const linkToAdd of linksToAdd) {
@@ -151,7 +152,7 @@ export const search = async (req, res, type) => {
 			}
 		} else {
 			// Return all links according to limit
-			links = await selectedSchema.find().limit(limit);
+			links = await selectedSchema.find().limit(limit).lean();
 			links = links.map((link) => ({
 				id: link._id,
 				name: "Eric Leroux and David Addison",
@@ -207,7 +208,7 @@ export const updateLink = async (req, res, type) => {
 		});
 		// Return status 201 if there was an update and 200 if a new resource was created
 		res
-			.status(newLink.lastErrorObject.updatedExisting ? 200 : 201)
+			.status(newLink.lastErrorObject.updatedExisting ? 201 : 200)
 			.json(newLink);
 	} catch (error) {
 		res.status(400).json({ message: error.message });

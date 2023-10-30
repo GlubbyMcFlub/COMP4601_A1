@@ -29,6 +29,7 @@ const linkSchema = new Schema(
 		paragraph: {
 			type: String,
 			default: "",
+			index: true,
 		},
 		wordFrequencies: {
 			type: Map,
@@ -42,6 +43,7 @@ const linkSchema = new Schema(
 		outgoingLinks: {
 			type: [String],
 			default: [],
+			index: true,
 		},
 		pageRank: {
 			type: Number,
