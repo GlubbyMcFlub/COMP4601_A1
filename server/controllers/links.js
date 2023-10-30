@@ -36,7 +36,7 @@ export const search = async (req, res, type) => {
 		// Get query parameters and cache the query
 		const { id, q, boost, limit } = req.query;
 		const applyBoost = boost === "true";
-		const cacheKey = `search:${q}:${applyBoost}:${limit}:${type}`;
+		const cacheKey = `search:${q}:${applyBoost}:${type}`;
 		let links;
 		let selectedSchema;
 
@@ -53,8 +53,8 @@ export const search = async (req, res, type) => {
 
 		// If query is cached, return cached result
 		const cachedResult = cache.get(cacheKey);
-		if (cachedResult) {
-			return res.status(200).json(cachedResult);
+		if (cachedResult && cachedResult.length >= limit) {
+			return res.status(200).json(cachedResult.slice(0, limit));
 		}
 
 		// If request contains an ID then find resource by ID and send it back

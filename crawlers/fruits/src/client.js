@@ -122,16 +122,16 @@ c.queue(baseCrawl);
 
 c.on("drain", async function () {
 	try {
-		// Tell the server to calculate the scores and pageRanks
-		const scoreResponse = await fetch(baseEndPoint + "score/", {
+		// Tell the server to index and calculate pageRanks
+		const indexResponse = await fetch(baseEndPoint + "score/", {
 			method: "PATCH",
 			headers: {
 				"Content-Type": "application/json",
 			},
 		});
-		await scoreResponse.json();
-		if (scoreResponse.status != 200) {
-			console.error("Error calculating scores on drain");
+		await indexResponse.json();
+		if (indexResponse.status != 200) {
+			console.error("Error indexing on drain");
 		}
 
 		const pageRankResponse = await fetch(baseEndPoint + "pageRank/", {

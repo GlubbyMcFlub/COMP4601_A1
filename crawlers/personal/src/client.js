@@ -4,7 +4,9 @@ import fetch from "node-fetch";
 
 // Initial endpoint for personal crawler
 const baseEndPoint = "http://localhost:5000/personal/";
-const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+// const baseCrawl = "https://legiontd2.fandom.com/wiki/";
+const baseCrawl2 = "https://starwars.fandom.com/wiki/";
+const baseCrawl = "https://starwars.fandom.com/wiki/Main_Page";
 // const baseCrawl =
 // 	"https://legiontd2.fandom.com/wiki/Chloropixie?action=history";
 
@@ -17,14 +19,52 @@ const followRedirect = false;
 EventEmitter.defaultMaxListeners = 20;
 
 // Global variables
-const maxPagesToVisit = 1000;
+const maxPagesToAdd = 1000;
 let pagesData = new Set();
 let queuedLinks = new Set();
-const blacklisted = [
-	"UserLogin",
-	"auth.fandom.com/kratos-public/self-service/login/browser",
-	"community.fandom.com",
+const blacklistedFileTypes = [
+	"wav",
+	"png",
+	"jpg",
+	"gif",
+	"pdf",
+	"mp3",
+	"mp4",
+	"ogg",
 ];
+const blacklistedTokens = ["?", "#", "undefined"];
+const blacklistedSites = ["UserLogin", "community.fandom.com"];
+
+function isValidUrl(url) {
+	// console.log(url);
+	if (!url.startsWith(baseCrawl2)) {
+		// console.log(url);
+
+		return false;
+	}
+	for (const site of blacklistedSites) {
+		if (url.includes(site)) {
+			// console.log(site);
+
+			return false;
+		}
+	}
+	for (const type of blacklistedFileTypes) {
+		if (url.includes(type)) {
+			// console.log(type);
+
+			return false;
+		}
+	}
+	for (const token of blacklistedTokens) {
+		if (url.includes(token)) {
+			// console.log(token);
+
+			return false;
+		}
+	}
+	return true;
+}
 
 /*
 	This crawler crawls the personal website, and adds the data to the database.
@@ -46,7 +86,6 @@ const blacklisted = [
 	- followRedirect (boolean): whether to follow redirects manually or not
 */
 
-let isGood = false;
 const c = new Crawler({
 	maxConnections: maxConnections,
 	rateLimit: rateLimit,
@@ -55,28 +94,16 @@ const c = new Crawler({
 	followRedirect: followRedirect,
 	preRequest: function (options, done) {
 		try {
-			const isWikiPage = options.uri.startsWith(baseCrawl);
-			const isQuery =
-				options.uri.includes("?") || options.uri.includes("?action=");
-			const notBlacklisted = !blacklisted.some((keyword) =>
-				options.uri.includes(keyword)
-			);
-			const isValidUrl = !options.uri.match(
-				/\.(wav|png|jpg|gif|pdf|#|mp3|mp4)$/i
-			);
-
-			if (isWikiPage && isValidUrl && notBlacklisted && !isQuery) {
-				isGood = true;
-				console.log("Crawling:", options.uri);
+			if (isValidUrl(options.uri)) {
+				// console.log("Crawling:", options.uri);
 				done();
 			} else {
-				console.log("Skipping invalid URL:", options.uri);
-				isGood = false;
+				// console.log("Skipping invalid URL:", options.uri);
+				console.log("prerequest: ", options.uri);
 				done();
 			}
 		} catch (error) {
 			console.error("Error in preRequest:", error);
-			isGood = false;
 			done();
 		}
 	},
@@ -88,23 +115,17 @@ const c = new Crawler({
 				// Catch redirects
 				if (res.statusCode >= 300 && res.statusCode < 400) {
 					const redirectLocation = res.headers.location;
-					const hasQ = redirectLocation.includes("?");
-					const check =
+					const isInvalidHeaders =
 						!res ||
 						!res.headers ||
 						!res.headers["content-type"] ||
-						!res.headers["content-type"].includes("text/html") ||
-						!isGood ||
-						hasQ;
-					const notBlacklisted = !blacklisted.some((keyword) =>
-						redirectLocation.includes(keyword)
-					);
+						!res.headers["content-type"].includes("text/html");
 					// Check if redirect location is valid
 					if (
-						!queuedLinks.has(redirectLocation) &&
-						notBlacklisted &&
-						queuedLinks.size < maxPagesToVisit &&
-						!check
+						queuedLinks.size < maxPagesToAdd &&
+						!isInvalidHeaders &&
+						isValidUrl(redirectLocation) &&
+						!queuedLinks.has(redirectLocation)
 					) {
 						queuedLinks.add(redirectLocation);
 						c.queue(redirectLocation);
@@ -158,9 +179,9 @@ const c = new Crawler({
 						// Add outgoing links to queue
 						outgoingLinks.forEach((outgoingLink) => {
 							if (
-								!queuedLinks.has(outgoingLink) &&
-								outgoingLink.startsWith(baseCrawl) &&
-								queuedLinks.size < maxPagesToVisit
+								queuedLinks.size < maxPagesToAdd &&
+								isValidUrl(outgoingLink) &&
+								!queuedLinks.has(outgoingLink)
 							) {
 								queuedLinks.add(outgoingLink);
 								c.queue(outgoingLink);
