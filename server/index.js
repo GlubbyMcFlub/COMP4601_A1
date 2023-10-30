@@ -17,7 +17,6 @@ const PORT = process.env.PORT || 5000;
 const CONNECTION_URL = process.env.CONNECTION_URL;
 const FLOATING_IP = process.env.FLOATING_IP;
 const DISTRIBUTED_SYSTEM = process.env.DISTRIBUTED_SYSTEM;
-const baseEndPoint = `http://localhost:${PORT}`;
 
 // Database Connection & Start Server
 try {
@@ -49,32 +48,6 @@ try {
 			}
 		} catch (error) {
 			console.error("Error connecting to distributed system: ", error.message);
-		}
-		try {
-			// Tell the server to index and calculate pageRanks
-			const indexResponse = await fetch(baseEndPoint + "index/", {
-				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-			await indexResponse.json();
-			if (indexResponse.status != 200) {
-				console.error("Error indexing on drain");
-			}
-
-			const pageRankResponse = await fetch(baseEndPoint + "pageRank/", {
-				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-			await pageRankResponse.json();
-			if (pageRankResponse.status != 200) {
-				console.error("Error calculating pageRanks on drain");
-			}
-		} catch (error) {
-			console.error("Error populating indexes or ranking pages" + error);
 		}
 	});
 } catch (error) {
