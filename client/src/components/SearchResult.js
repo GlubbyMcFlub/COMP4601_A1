@@ -23,26 +23,35 @@ const SearchResult = ({
 	pageRank,
 	wordFrequencies,
 }) => {
+	const truncatedURL = url.length > 50 ? url.slice(0, 50) + "..." : url;
+	const formattedScore = score.toFixed(10);
+	const formattedPageRank = pageRank.toFixed(10);
+
 	return (
 		<div className="search-result">
 			<div className="result-header">
 				<div className="result-number">{result}</div>
 				<div className="result-info">
 					<h2>{title}</h2>
-					<Link to={`/result/${id}`} className="result-link">
-						{url}
-					</Link>
+					<a
+						href={url}
+						className="result-link"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						{truncatedURL}
+					</a>
 				</div>
 			</div>
 			<div className="result-content">
 				<div className="result-details">
 					<div className="result-detail">
 						<h4>Score:</h4>
-						<p>{score}</p>
+						<p>{formattedScore}</p>
 					</div>
 					<div className="result-detail">
 						<h4>PageRank:</h4>
-						<p>{pageRank}</p>
+						<p>{formattedPageRank}</p>
 					</div>
 				</div>
 				<WordFrequencies wordFrequencies={wordFrequencies} />
