@@ -192,8 +192,8 @@ const c = new Crawler({
 	},
 });
 
-c.queue(baseCrawl);
-queuedLinks.add(baseCrawl);
+// c.queue(baseCrawl);
+// queuedLinks.add(baseCrawl);
 
 c.on("drain", async function () {
 	try {
