@@ -103,81 +103,81 @@ const c = new Crawler({
 	},
 	callback: async function (error, res, done) {
 		try {
-			// 	if (error) {
-			// 		console.error("Error:", error);
-			// 	} else {
-			// 		// Catch redirects
-			// 		if (res.statusCode >= 300 && res.statusCode < 400) {
-			// 			const redirectLocation = res.headers.location;
-			// 			const isInvalidHeaders =
-			// 				!res ||
-			// 				!res.headers ||
-			// 				!res.headers["content-type"] ||
-			// 				!res.headers["content-type"].includes("text/html");
-			// 			// Check if redirect location is valid
-			// 			if (
-			// 				queuedLinks.size < maxPagesToAdd &&
-			// 				!isInvalidHeaders &&
-			// 				isValidUrl(redirectLocation) &&
-			// 				!queuedLinks.has(redirectLocation)
-			// 			) {
-			// 				queuedLinks.add(redirectLocation);
-			// 				c.queue(redirectLocation);
-			// 			}
-			// 		} else if (res.statusCode === 200) {
-			// 			// If not a redirect, extract data from DOM
-			// 			const $ = res.$;
-			// 			const baseUrl = new URL(res.options.uri);
-			// 			const url = baseUrl.href;
-			// 			const hasParagraph = $("p").length > 0;
-			// 			// If page has paragraph, add to pagesData
-			// 			if (!pagesData[url] && hasParagraph) {
-			// 				const outgoingLinks = $("a")
-			// 					.map(function () {
-			// 						const link = new URL($(this).attr("href"), baseUrl);
-			// 						return link.href;
-			// 					})
-			// 					.get();
-			// 				const paragraph = $("p").text().trim().replace(/\s+/g, " ");
-			// 				const title = $("title").text();
-			// 				// Separate paragraph into array of words
-			// 				const words = paragraph.match(/\b\w+\b/g);
-			// 				let wordFrequencies = {};
-			// 				// Calculate word frequencies
-			// 				if (words) {
-			// 					words.forEach((word) => {
-			// 						if (!/^\d+$/.test(word)) {
-			// 							const lowercaseWord = word.toLowerCase();
-			// 							wordFrequencies[lowercaseWord] =
-			// 								(wordFrequencies[lowercaseWord] || 0) + 1;
-			// 						}
-			// 					});
-			// 					wordFrequencies = Object.entries(wordFrequencies)
-			// 						.sort((a, b) => b[1] - a[1])
-			// 						.slice(0, 10);
-			// 				}
-			// 				// Add page to pagesData
-			// 				pagesData[url] = {
-			// 					title: title,
-			// 					paragraph: paragraph,
-			// 					outgoingLinks: outgoingLinks,
-			// 					wordFrequencies: wordFrequencies,
-			// 					complete: true,
-			// 				};
-			// 				// Add outgoing links to queue
-			// 				outgoingLinks.forEach((outgoingLink) => {
-			// 					if (
-			// 						queuedLinks.size < maxPagesToAdd &&
-			// 						isValidUrl(outgoingLink) &&
-			// 						!queuedLinks.has(outgoingLink)
-			// 					) {
-			// 						queuedLinks.add(outgoingLink);
-			// 						c.queue(outgoingLink);
-			// 					}
-			// 				});
-			// 			}
-			// 		}
-			// 	}
+			if (error) {
+				console.error("Error:", error);
+			} else {
+				// Catch redirects
+				if (res.statusCode >= 300 && res.statusCode < 400) {
+					const redirectLocation = res.headers.location;
+					const isInvalidHeaders =
+						!res ||
+						!res.headers ||
+						!res.headers["content-type"] ||
+						!res.headers["content-type"].includes("text/html");
+					// Check if redirect location is valid
+					if (
+						queuedLinks.size < maxPagesToAdd &&
+						!isInvalidHeaders &&
+						isValidUrl(redirectLocation) &&
+						!queuedLinks.has(redirectLocation)
+					) {
+						queuedLinks.add(redirectLocation);
+						c.queue(redirectLocation);
+					}
+				} else if (res.statusCode === 200) {
+					// If not a redirect, extract data from DOM
+					const $ = res.$;
+					const baseUrl = new URL(res.options.uri);
+					const url = baseUrl.href;
+					const hasParagraph = $("p").length > 0;
+					// If page has paragraph, add to pagesData
+					if (!pagesData[url] && hasParagraph) {
+						const outgoingLinks = $("a")
+							.map(function () {
+								const link = new URL($(this).attr("href"), baseUrl);
+								return link.href;
+							})
+							.get();
+						const paragraph = $("p").text().trim().replace(/\s+/g, " ");
+						const title = $("title").text();
+						// Separate paragraph into array of words
+						const words = paragraph.match(/\b\w+\b/g);
+						let wordFrequencies = {};
+						// Calculate word frequencies
+						if (words) {
+							words.forEach((word) => {
+								if (!/^\d+$/.test(word)) {
+									const lowercaseWord = word.toLowerCase();
+									wordFrequencies[lowercaseWord] =
+										(wordFrequencies[lowercaseWord] || 0) + 1;
+								}
+							});
+							wordFrequencies = Object.entries(wordFrequencies)
+								.sort((a, b) => b[1] - a[1])
+								.slice(0, 10);
+						}
+						// Add page to pagesData
+						pagesData[url] = {
+							title: title,
+							paragraph: paragraph,
+							outgoingLinks: outgoingLinks,
+							wordFrequencies: wordFrequencies,
+							complete: true,
+						};
+						// Add outgoing links to queue
+						outgoingLinks.forEach((outgoingLink) => {
+							if (
+								queuedLinks.size < maxPagesToAdd &&
+								isValidUrl(outgoingLink) &&
+								!queuedLinks.has(outgoingLink)
+							) {
+								queuedLinks.add(outgoingLink);
+								c.queue(outgoingLink);
+							}
+						});
+					}
+				}
+			}
 		} catch (err) {
 			console.error("Callback Error:", err);
 		} finally {
@@ -187,7 +187,7 @@ const c = new Crawler({
 });
 
 c.queue(baseCrawl);
-// queuedLinks.add(baseCrawl);
+queuedLinks.add(baseCrawl);
 
 c.on("drain", async function () {
 	try {
