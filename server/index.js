@@ -40,6 +40,8 @@ try {
 
 			if (response.status === 201) {
 				console.log("Successfully connected to distributed system.");
+			} else if (response.status === 409) {
+				console.log("already connected");
 			} else {
 				console.error(
 					"Failed to connect to distributed system, bad response recieved: ",
