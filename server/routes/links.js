@@ -49,11 +49,11 @@ router.patch("/personal/pageRank", (req, res) => {
 });
 
 // SCORE
-router.patch("/fruits/score", (req, res) => {
+router.patch("/fruits/index", (req, res) => {
 	indexLinks(req, res, "fruits");
 });
 
-router.patch("/personal/score", (req, res) => {
+router.patch("/personal/index", (req, res) => {
 	indexLinks(req, res, "personal");
 });
 

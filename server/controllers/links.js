@@ -62,7 +62,16 @@ export const search = async (req, res, type) => {
 			if (!mongoose.Types.ObjectId.isValid(id)) {
 				return res.status(400).json({ message: "Invalid link ID" });
 			}
-			const foundLink = await selectedSchema.findById(id);
+			const foundLink = await selectedSchema.findById(id).select({
+				id: 1,
+				paragraph: 1,
+				title: 1,
+				link: 1,
+				incomingLinks: 1,
+				outgoingLinks: 1,
+				wordFrequencies: 1,
+				pageRank: 1,
+			});
 			if (!foundLink) {
 				return res.status(404).json({ message: "Link not found" });
 			}
@@ -92,6 +101,12 @@ export const search = async (req, res, type) => {
 			const linkIds = searchResults.map((result) => result.ref);
 			const dbLinks = await selectedSchema
 				.find({ _id: { $in: linkIds } })
+				.select({
+					id: 1,
+					title: 1,
+					link: 1,
+					pageRank: 1,
+				})
 				.lean();
 
 			// Map search results to links
@@ -100,7 +115,7 @@ export const search = async (req, res, type) => {
 					const foundLink = dbLinks.find((link) => link._id.equals(result.ref));
 					if (!foundLink) {
 						console.error(
-							"link " + result.ref + "not found, returning empty data"
+							"link " + result.ref + " not found, returning empty data" //TODO investigate why we are hitting this
 						);
 						return {
 							id: "",
@@ -130,29 +145,49 @@ export const search = async (req, res, type) => {
 
 			// Trim results down to limit
 			links = links.slice(0, limit);
-			let linksToAdd = await selectedSchema.find().limit(limit).lean();
+			let linksToAdd;
+			if (links.length < limit) {
+				linksToAdd = await selectedSchema
+					.find()
+					.limit(limit)
+					.select({
+						id: 1,
+						title: 1,
+						link: 1,
+						pageRank: 1,
+					})
+					.lean();
+				// Add any other links with score of 0 if limit is not yet reached
+				for (const linkToAdd of linksToAdd) {
+					if (links.length == limit) {
+						break;
+					}
 
-			// Add any other links with score of 0 if limit is not yet reached
-			for (const linkToAdd of linksToAdd) {
-				if (links.length == limit) {
-					break;
-				}
-
-				if (!links.some((link) => link.id == linkToAdd._id.toString())) {
-					let doc = {
-						id: linkToAdd._id,
-						name: "Eric Leroux and David Addison",
-						title: linkToAdd.title,
-						url: linkToAdd.link,
-						score: 0,
-						pr: linkToAdd.pageRank,
-					};
-					links.push(doc);
+					if (!links.some((link) => link.id == linkToAdd._id.toString())) {
+						let doc = {
+							id: linkToAdd._id,
+							name: "Eric Leroux and David Addison",
+							title: linkToAdd.title,
+							url: linkToAdd.link,
+							score: 0,
+							pr: linkToAdd.pageRank,
+						};
+						links.push(doc);
+					}
 				}
 			}
 		} else {
 			// Return all links according to limit
-			links = await selectedSchema.find().limit(limit).lean();
+			links = await selectedSchema
+				.find()
+				.limit(limit)
+				.select({
+					id: 1,
+					title: 1,
+					link: 1,
+					pageRank: 1,
+				})
+				.lean();
 			links = links.map((link) => ({
 				id: link._id,
 				name: "Eric Leroux and David Addison",

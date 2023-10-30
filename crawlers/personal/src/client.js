@@ -80,7 +80,7 @@ function isValidUrl(url) {
 	Drain: 
 	- add pages to database
 	- calculate incoming links for each page
-	- request server to calculate scores for each page
+	- request server to index for each page
 */
 const c = new Crawler({
 	maxConnections: maxConnections,
@@ -250,16 +250,16 @@ c.on("drain", async function () {
 			}
 		}
 
-		// Tell the server to calculate the scores and pageRanks
-		const scoreResponse = await fetch(baseEndPoint + "score/", {
+		// Tell the server to index and calculate pageRanks
+		const indexResponse = await fetch(baseEndPoint + "index/", {
 			method: "PATCH",
 			headers: {
 				"Content-Type": "application/json",
 			},
 		});
-		await scoreResponse.json();
-		if (scoreResponse.status != 200) {
-			console.error("Error calculating scores on drain");
+		await indexResponse.json();
+		if (indexResponse.status != 200) {
+			console.error("Error indexing on drain");
 		}
 
 		const pageRankResponse = await fetch(baseEndPoint + "pageRank/", {

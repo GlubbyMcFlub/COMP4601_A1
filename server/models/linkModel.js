@@ -34,7 +34,6 @@ const linkSchema = new Schema(
 		wordFrequencies: {
 			type: Map,
 			of: { type: Number },
-			index: true,
 		},
 		incomingLinks: {
 			type: [String],

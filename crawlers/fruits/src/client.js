@@ -9,7 +9,7 @@ const baseCrawl =
 /*
 	This crawler crawls the fruits website, and adds the data to the database.
 	Drain: 
-	- request server to calculate scores for each page
+	- request server to index for each page
 	- request server to calculate page ranks for each page
 
 	Params: none
@@ -123,7 +123,7 @@ c.queue(baseCrawl);
 c.on("drain", async function () {
 	try {
 		// Tell the server to index and calculate pageRanks
-		const indexResponse = await fetch(baseEndPoint + "score/", {
+		const indexResponse = await fetch(baseEndPoint + "index/", {
 			method: "PATCH",
 			headers: {
 				"Content-Type": "application/json",

@@ -2,6 +2,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import fetch from "node-fetch";
 import mongoose from "mongoose";
 
 // Routes
@@ -23,9 +24,30 @@ mongoose
 	})
 	.then(() => {
 		console.log("Connected to MongoDB. Great success!");
-		app.listen(PORT, () => {
+		app.listen(PORT, async () => {
 			console.log(`Server is running on http://localhost:${PORT}`);
-		});
+		})
+		.then(
+			response = await fetch( "http://134.117.130.17:3000/searchengines", {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({request_url: "http://134.117.128.87:3000"}),
+			});
+			// const outgoingLinkData = await outgoingLinkResponse.json();
+			// if (outgoingLinkResponse.status === 200) {
+			// 	c.queue(outgoingLink);
+			// } else if (outgoingLinkResponse.status != 201) {
+			// 	console.error(
+			// 		"Failed to add outgoing link. Error: ",
+			// 		outgoingLinkData.message
+			// 	);
+			// }
+		).catch((error) => {
+			console.error("Error connecting to distributed system: ", error.message);
+			process.exit(1);
+		}
 	})
 	.catch((error) => {
 		console.error("Error connecting to MongoDB. Womp womp:", error.message);
