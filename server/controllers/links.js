@@ -353,7 +353,12 @@ export const indexLinks = async (req, res, type) => {
 		if (type === "fruits") selectedSchema = FruitModel;
 		else if (type === "personal") selectedSchema = PersonalModel;
 
-		let links = await selectedSchema.find();
+		let links = await selectedSchema.find().select({
+			id: 1,
+			title: 1,
+			paragraph: 1,
+			outgoingLinks: 1,
+		});
 		if (!links) {
 			console.error("no links found");
 		}
